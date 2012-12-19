@@ -1,0 +1,23 @@
+﻿生成启动时间为 2012-11-13 14:36:49。
+     1>项目“C:\Documents and Settings\shanfl\桌面\mba_nvdemo-070800\MBA_NVDemo_WIN32\src\ENVMAP.vcxproj”在节点 2 上(build 个目标)。
+     1>InitializeBuildStatus:
+         正在对“.\Release\ENVMAP.unsuccessfulbuild”执行 Touch 任务。
+       ClCompile:
+         所有输出均为最新。
+       Link:
+         C:\Program Files\Microsoft Visual Studio 10.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:".\Release\ENVMAP.exe" /INCREMENTAL:NO /NOLOGO imm32.lib winmm.lib wsock32.lib opengl32.lib glu32.lib ..\glut\lib\glut32.lib ..\glpng\lib\glpng.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /NODEFAULTLIB:LIBC.lib /MANIFEST /ManifestFile:".\Release\ENVMAP.exe.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /PDB:"C:\Documents and Settings\shanfl\桌面\mba_nvdemo-070800\MBA_NVDemo_WIN32\src\Release\ENVMAP.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\Release\ENVMAP.lib" /MACHINE:X86 .\Release\RglPrims.obj
+         .\Release\room.obj
+         .\Release\reflect.obj
+         .\Release\mmath.obj
+         .\Release\main.obj
+         ENVMAP.vcxproj -> C:\Documents and Settings\shanfl\桌面\mba_nvdemo-070800\MBA_NVDemo_WIN32\src\.\Release\ENVMAP.exe
+       Manifest:
+         C:\Program Files\Microsoft SDKs\Windows\v7.0A\bin\mt.exe /nologo /verbose /outputresource:".\Release\ENVMAP.exe;#1" /manifest .\Release\ENVMAP.exe.intermediate.manifest
+       FinalizeBuildStatus:
+         正在删除文件“.\Release\ENVMAP.unsuccessfulbuild”。
+         正在对“.\Release\ENVMAP.lastbuildstate”执行 Touch 任务。
+     1>已完成生成项目“C:\Documents and Settings\shanfl\桌面\mba_nvdemo-070800\MBA_NVDemo_WIN32\src\ENVMAP.vcxproj”(build 个目标)的操作。
+
+生成成功。
+
+已用时间 00:00:00.34

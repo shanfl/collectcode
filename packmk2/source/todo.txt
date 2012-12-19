@@ -1,0 +1,56 @@
+todo:
+- test something better than linear interpolation when generating the maps
+- try using FFT for the mapcreation
+
+ideas:
+
+- reference raytracer
+
+- store the z-coordinate of the refracted scene in a second texture (using MRT?)
+do a comparison and use it only if refraction.z < scene.z
+this way the refraction can be rendered without a scissor plane.
+(probably a dodgy idea)
+
+- a map representing calm/wild areas of the water
+
+- create an algorithm for generating cubemap-mipmaps that doesn't get discontinuities at the seams.. or is this just a filtering issue?
+
+- Wave response curves, 
+
+abandoned:
+- figure out why fonts don't work with D3DFMT_A2R10G10B10 (or abandon the idea)
+- use a quad for clearing.. this will allow a correct 10-10-10-2 colour to be set and will potentially save fillrate
+- make the reflection/refraction distortion in worldspace (it looked good enough already, at least I think so :P )
+
+fixed:
+- water "fog"
+- make the rendertargets use a z/stencil-buffer that is seperate from the backbuffer.. AA fscks up otherwise
+- restore underwater shader
+- add efficiency calculation
+- split indexbuffersize into 64k chunks (not needed with cat 3.9)
+- make a skybox in world geometry that works above and below the surface
+- fix the bug that causes the geometry to go to the right with lower tesselation levels
+- change grid-size from 2^n to (2^n + 1) which makes the number of quads in each row a power-of-two (which is more relevant than the vertices being a power of two)
+- normalize
+- gaussian noise
+- projector issues:
+- the projector should probably be aimed straight down. It would be the ultimate robust solution.
+- fit projector more closesly to frustum.. square isn't good enough
+- make it possible to change detail on the fly again
+- theres something fishy about the "levitation" process
+- fix precision issues with heightmap
+- precompute noise interpolation levels separately in order to mootify blending and allow for floating point precision.
+a box filter could be added to remove some of the jerkyness
+- correct normalmap math
+- use debugging on the shaders
+- skybox
+- a parameter handling system
+- write plane intersection as a vertexshader
+- separate gridsize into two two parameters. vertical gridsize needs to be much larger
+(this will cause issues when the camera is rotated around the z-axis as more detail will be needed along that axis)
+- animation system
+- rethink tesselation space
+To avoid wasting too much geometry up close, do the tesselation projected from a camera that is slightly offset away from the plane,
+but use the actual cameras frustum to do the limiting.
+This will also cure the issues about vertices being projected backwards 
+

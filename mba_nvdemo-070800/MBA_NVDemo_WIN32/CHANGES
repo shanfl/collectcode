@@ -1,0 +1,8 @@
+07/09/00
+* now builds on Win32. Thanks to Eric Pallissier sending his modifications.
+* Added -timer flag and enabled fps printing again.
+
+07/05/00
+* Fixed texture matrix stack overflow. Doh! Thanks to Brian Paul for catching
+  this.
+* Added -I/usr/X11R6/include to Makefiles.
