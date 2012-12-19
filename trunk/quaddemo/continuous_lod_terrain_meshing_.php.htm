@@ -1,0 +1,946 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=GB2312">
+
+<style type="text/css">
+table, body {font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 12px;}
+h3.title {font-size: 16px; background: #eeeeee; width: 100%; padding: 3px;}
+span.gamacode {
+	/*font-family: "courier new";*/
+	display: block;
+	padding-left: 20px;
+	text-align: left;
+}
+</style>
+
+<title>Gamasutra - Features - Continuous LOD Terrain Meshing Using Adaptive Quadtrees</title>
+</head>
+<body style="cursor: default;"><div style="width: 750px; margin:auto;">
+<div style="border: 2px solid #ccc; width: 100%;"><a href="http://www.gamasutra.com/"><img src="continuous_lod_terrain_meshing_.php_files/gamalogo.gif" border="0"></a>
+	<a href="javascript:window.print()"><img src="continuous_lod_terrain_meshing_.php_files/print.gif" style="border: 0pt none ; float: right; margin-top: 10px;"></a>
+</div>
+<div style="clear:both;"></div>
+<h3 class="title">Continuous LOD Terrain Meshing Using Adaptive Quadtrees</h3>
+By Thatcher Ulrich
+<p>
+<span>Terrain 
+rendering is a perennial hot issue in the world of game programming.<span>  </span>Right now we're at a particularly interesting 
+point in the development of terrain rendering technology, 
+because polygon budgets have risen to the point where, in 
+conjunction with real-time LOD meshing algorithms taken from 
+published academic papers, state-of-the-art game engines 
+are able to draw quite a bit of reasonably detailed terrain.<span> </span> 
+However, the techniques which are currently in common use must 
+compromise either on terrain size or on close-up detail.</span>
+</p>
+<p class="MsoPlainText">
+<span>As 
+part of the R&amp;D for <em>Soul Ride</em>, the game I'm currently working 
+on (<a href="http://www.soulride.com/">http://www.soulride.com</a> 
+), I experimented with the published algorithms, and eventually 
+came up with an extension that eliminates the tradeoff between 
+terrain size and close-up detail.<span>  </span>This article presents my algorithm, along with its similarities 
+and differences from the above-mentioned algorithms.</span>
+</p>
+<p class="MsoPlainText">
+<span>I'll 
+start by reviewing the problem of terrain rendering, and describe 
+the problem solved by [1], [2], and [3] (see references at the end of 
+this article).<span>  </span>Then I'll explain the additional problem solved by my 
+algorithm.<span>  </span>I'll present a detailed description 
+of the algorithm, and discuss some of the problems with it 
+and some of the untapped potential.<span>  </span>And last but not least, I'll provide the source code 
+to a demo that implements my algorithm, which you can use 
+to help understand it, evaluate its effectiveness, and incorporate 
+directly into your own projects if you want.</span>
+</p>
+<p class="MsoPlainText">
+<span>This 
+article is not a general tutorial or review of terrain rendering.<span>  </span>I'm going to assume some familiarity on your 
+part with the problem.<span>  </span>If 
+things aren't making much sense, you may want to consult 
+the excellent references listed at the end of the article.</span>
+</p>
+<p class="MsoPlainText" align="left">
+<span><strong>The 
+Problems</strong></span>
+</p>
+<p class="MsoPlainText">
+<span></span><span>What 
+do we want from a terrain renderer?<span>  
+</span>We want a single continuous mesh from the foreground 
+all the way to the horizon, with no cracks or T-junctions.<span>  
+</span>We want to view a large area over a large range of detail 
+levels: we want to see the bumps in front of our feet to the mountains 
+in the background.<span>  </span>For the sake 
+of discussion, let's say that we want feature size to range 
+from 1m up to 100000m; five orders of magnitude.<span>  
+</span></span>
+</p>
+<p class="MsoPlainText">
+<span>How 
+can we do it?<span>  </span>The brute-force 
+approach won't work on ordinary computers circa Y2K.<span>  
+</span>If we make a 100000m x 100000m grid of 16-bit height 
+values, and just draw them in a mesh (Figure 1), we'll end up with 
+two big problems.First, the triangle problem: we'll be sending 
+up to 20 billion triangles/frame to our rendering API.<span>  
+</span>Second, the memory problem: our heightfield will consume 
+20 GB of data.<span>  </span>It will be many 
+years before hardware advances to the point where we can 
+just use brute-force and get good results.</span>
+</p>
+<table align="center" bgcolor="#ffffff" border="0" cellpadding="3" cellspacing="0" width="49%">
+	<tbody>
+		<tr>
+			<td>
+			<div align="center">
+			<img src="continuous_lod_terrain_meshing_.php_files/figure_01.gif" alt="" height="265" width="261">
+			</div>
+			</td>
+		</tr>
+		<tr>
+			<td> 
+			<div align="center">
+			<strong>Fig 
+			1. Brute force approach to a heightfield mesh.</strong>
+			</div>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<p class="MsoPlainText">
+<span>There 
+are several previously-published methods which successfully tackle 
+the triangle problem.<span>  </span>The most 
+widely used ones employ a clever family of recursive meshing 
+algorithms [1], [2], [3]. Using one of these algorithms, 
+we can effectively tame our mesh, and render a seamless terrain 
+with a few thousand triangles, with the vertices intelligently 
+selected on the fly from the 10 billion in the dataset.</span>
+</p>
+<p class="MsoPlainText">
+<span>However, 
+we still have a memory problem, since the heightfield dataset 
+consumes 20 GB (plus some overhead to support the meshing 
+algorithm).</span>
+</p>
+<p class="MsoPlainText">
+<span>One 
+obvious solution is to compromise on detail by making the heightfield 
+dimensions smaller.<span>  </span>1k x 1k 
+is a good practical size for a heightfield with today's machines.<span>  
+</span>A recently released game called <em>TreadMarks</em> 
+uses a 1k x 1k dataset to excellent effect [4] (see references at the 
+end of the article). Unfortunately, 1k x 1k is still a far 
+cry from 100k x 100k.<span>  </span>We end 
+up having to limit either the size of the terrain and the view 
+distance, or the amount of foreground detail. </span>
+</p>
+<p class="MsoPlainText">
+<span>The 
+solution which I cover in this article is to use an adaptive quadtree, 
+instead of a regular grid, to represent the terrain height information.<span>  </span>Using this quadtree, we can encode height data 
+at different resolutions in different regions in the terrain.<span>  </span>For example, in a driving game, you would want lots of 
+fine detail on and around the roads, ideally showing every 
+bump, but you wouldn't need that much detail for the surrounding 
+wilderness that you can't drive to; you only need enough 
+detail for the general shape of hills and valleys.</span>
+</p>
+<p class="MsoPlainText">
+<span>The 
+quadtree can also be used for another attack on the memory problem: 
+procedural detail.<span>  </span>The idea 
+is to pre-define the shape of the terrain at a coarse level, and have 
+the computer automatically generate fine detail on the fly 
+for the area immediately around the viewer.<span>  </span>Because of the quadtree's adaptive nature, 
+this detail can be discarded when the viewer moves, freeing 
+up memory for creating procedural detail in a different region.</span>
+</p>
+<p class="MsoPlainText">
+<span>Separately, 
+the use of quadtrees for adaptive representation of 2D functions, 
+and the use of quadtrees for recursive meshing [1], [3] are both well-known.<span>  
+</span>However, [1] and [3] both use regular grids for their 
+underlying heightfield representation. Extending their meshing 
+approach to work with a true adaptive quadtree presents numerous 
+complications, and requires some tricky programming.<span>  </span>Hence this article and the accompanying demo 
+code.</span>
+</p>
+<hr name="false">
+<p>
+<span><strong>Meshing</strong></span>
+</p>
+<p class="MsoPlainText">
+<span>My 
+meshing algorithm is based on [1], which has also influenced [2] 
+and [3].<span>  </span>There are a few key 
+modifications, but much of the basic approach is the same, 
+and I borrow a lot of the [1] terminology.</span>
+</p>
+<p class="MsoPlainText">
+<span>There 
+are two parts to meshing.<span>  </span>I 
+call the first part Update() and the second part Render(), 
+after [1].<span>  </span>During Update(), 
+we'll decide which vertices to include in the output mesh.<span>  
+</span>Then, during Render() we'll generate a triangle mesh that includes 
+those vertices.  I'll start by explaining Update() 
+and Render() for an extremely simple heightfield: a 3x3 grid 
+(Figure 2).<span>  </span>To Update() it, 
+we'll look at each of the optional vertices and decide whether 
+to include them in the mesh.<span>  
+</span>Following the terminology of [1], we'll say that if 
+and only if a vertex is "enabled", then we'll use it in the 
+mesh. </span>
+</p>
+<br>
+<table align="center" bgcolor="#ffffff" border="0" cellpadding="3" cellspacing="0" width="51%">
+	<tbody>
+		<tr>
+			<td>
+			<div align="center">
+			<img src="continuous_lod_terrain_meshing_.php_files/figure_02.gif" alt="" height="279" width="282">
+			</div>
+			</td>
+		</tr>
+		<tr>
+			<td> 
+			<p align="center">
+			<strong>Figure 
+			2. A 3x3 heightfield. Dashed lines and vertices are optional in 
+			an LOD mesh.</strong>
+			</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<p class="MsoPlainText">
+<span>Take 
+as given that the center and corner vertices are enabled.<span> </span>So the task is to calculate the enabled 
+state for each of the four edge vertices, according to some 
+LOD calculation which takes the viewpoint and the vertex 
+attributes into account.</span>
+</p>
+<p class="MsoPlainText">
+<span>Once 
+we know which vertices are enabled, we can Render() the mesh. It's 
+easy; we just make a triangle fan with the center vertex as the 
+hub, and include each enabled vertex in clockwise order around 
+the outside.<span>  </span>See Figure 3 for examples. </span>
+</p>
+<table align="center" bgcolor="#ffffff" border="0" cellpadding="3" cellspacing="0" width="75%">
+	<tbody>
+		<tr>
+			<td><img src="continuous_lod_terrain_meshing_.php_files/figure_03.gif" alt="" height="322" width="493"></td>
+		</tr>
+		<tr>
+			<td> 
+			<div align="center">
+			<strong>Figure 
+			3. Examples of LOD meshes on the 3x3 heightfield. <br>
+			Disabled vertices in black. </strong>
+			</div>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<p class="MsoPlainText">
+<span>To 
+Update() and Render() an adaptive quadtree heightfield, we extend 
+the above process by starting with that same 3x3 square and 
+recursively subdividing it.<span>  </span>By 
+subdividing, we can introduce new vertices, and treat them 
+like we treated the vertices of the original square.<span>  </span>In order to prevent cracks, however, we'll 
+have to observe some rules.</span>
+</p>
+<p class="MsoPlainText">
+<span>First, 
+we can subdivide any combination of the four quadrants.<span>  </span>When we subdivide a quadrant, we'll 
+treat the quadrant as a sub-square, and enable its center 
+vertex.<span>  </span>For mesh consistency, 
+we will also have to enable the edge vertices of the parent 
+square which are corners of the quadrant (Figure 4).<span>  
+</span>We'll define enabling a square to imply the enabling 
+of its center vertex as well as those corners.</span>
+</p>
+<table align="center" bgcolor="#ffffff" border="0" cellpadding="3" cellspacing="0" width="43%">
+	<tbody>
+		<tr>
+			<td><img src="continuous_lod_terrain_meshing_.php_files/figure_04.gif" alt="" height="283" width="291"></td>
+		</tr>
+		<tr>
+			<td height="11"> 
+			<p align="center">
+			<strong>Figure 
+			4. Subdividing the NE quadrant of a square. The gray vertices 
+			are already known to be enabled, but the black vertices must be 
+			enabled when we subdivide.</strong>
+			</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<p class="MsoPlainText">
+<span>Next, 
+notice that an edge vertex in a sub-square is shared with a neighboring 
+sub-square (except at the outside edges of our terrain). So 
+when we enable an edge vertex, we will have to make sure that the 
+neighboring sub-square which shares that vertex is also enabled 
+(Figure 5).<span>  </span>Enabling this 
+neighbor square can in turn cause other vertices to be enabled, 
+potentially propagating enabled flags through the quadtree.<span>  
+</span>This propagation is necessary to ensure mesh consistency.<span>  </span>See [1] for a good description of these dependency 
+rules.</span>
+</p>
+<table align="center" bgcolor="#ffffff" border="0" cellpadding="3" cellspacing="0" width="32%">
+	<tbody>
+		<tr>
+			<td><img src="continuous_lod_terrain_meshing_.php_files/figure_05.gif" alt="" height="265" width="269"></td>
+		</tr>
+		<tr>
+			<td height="6"> 
+			<p align="center">
+			<strong>Figure 
+			5. While updating the NE quadrant, we decide to enable the black 
+			vertex. Since that vertex is also shared by the SE quadrant (marked 
+			in gray), we must enable that quadrant also. Enabling the SE quadrant 
+			will in turn force us to enable the gray vertices.</strong>
+			</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<p class="MsoPlainText">
+<span>After 
+we're done with the Update(), we can Render() the quadtree. Rendering 
+is actually pretty simple; the complicated consistency stuff 
+was taken care of in Update().<span>  </span>The 
+basic strategy is to recursively Render() any enabled sub-squares, 
+and then render any parts of the square which weren't covered 
+by enabled sub-squares. (Figure 6) shows an example mesh.</span>
+</p>
+<table align="center" bgcolor="#ffffff" border="0" cellpadding="3" cellspacing="0" width="38%">
+	<tbody>
+		<tr>
+			<td><img src="continuous_lod_terrain_meshing_.php_files/figure_06.gif" alt="" height="264" width="265"></td>
+		</tr>
+		<tr>
+			<td> 
+			<div align="center">
+			<strong>Figure 
+			6. An example mesh. Enabled vertices are marked in black. The 
+			gray triangles are drawn by recursive calls to Render() on the 
+			associated sub-squares. The white triangle are drawn by the original 
+			call to Render().</strong>
+			</div>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<p class="MsoPlainText">
+<span></span><span><strong>Evaluating 
+vertices and squares</strong></span>
+</p>
+<p class="MsoPlainText">
+<span></span><span>In 
+the above description, I glossed over the part about deciding whether 
+a vertex should be enabled.<span>  </span>There 
+are a few different ways to do this.<span>  
+</span>All of them take into account what I'll call the "vertex 
+interpolation error", or vertex error for short.<span>  
+</span>What this is, is the difference in height between 
+the correct location of a vertex, and the height of the edge 
+in the triangle which approximates the vertex when the vertex 
+is disabled (Figure 7).<span>  </span>Vertices 
+which have a large error should be enabled in preference 
+to vertices which have a small error.<span>  
+</span>The other key variable that goes into the vertex enable 
+test is the distance of the vertex from the viewpoint.<span>  
+</span>Intuitively, given two vertices with the same error, 
+we should enable the closer one before we enable the more 
+distant one.</span>
+</p>
+<table align="center" bgcolor="#ffffff" border="0" cellpadding="3" cellspacing="0" width="75%">
+	<tbody>
+		<tr>
+			<td><img src="continuous_lod_terrain_meshing_.php_files/figure_07.gif" alt="" height="199" width="436"></td>
+		</tr>
+		<tr>
+			<td height="105"> 
+			<p align="center">
+			<strong>Figure 
+			7. Vertex interpolation error. When a vertex is enabled <br>
+			or disabled, the mesh changes shape. The maximum change<br>
+			occurs at the enabled vertex's position, shown by the dashed <br>
+			line. The magnitude of the change is the difference between <br>
+			the true height of the vertex (black) and the height of the <br>
+			original edge below the vertex (white). The white point is just 
+			<br>
+			the average of the two gray points.</strong>
+			</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<p class="MsoPlainText">
+<span>There 
+are other factors that can be included as well.<span>  </span>[1] for instance takes into account the direction from 
+the viewpoint to the vertex.<span>  </span>The justification is based on the idea of screen-space 
+geometric error; intuitively the vertex errors are less visible 
+when the view direction is more vertical.<span>  
+</span>[1] goes through the math in detail.</span>
+</p>
+<p class="MsoPlainText">
+<span>However, 
+I don't think screen-space geometric error is a particularly good 
+metric, for two reasons.<span>  One, it ignores 
+texture perspective and depth buffering errors -- even if a vertex does 
+not move in screen space because the motion is directly towards or away 
+from the viewpoint, the vertex's view-space z value does affect perspective-correction 
+as well as depth-buffering. </span>Two, the viewpoint-straight-down 
+case is both an easy case for terrain LOD algorithms, and 
+not a typical case.<span>  </span></span>
+</p>
+<p class="MsoPlainText">
+<span>In 
+my opinion, there's no point in optimizing for an atypical easy 
+case in an interactive system.<span>  
+</span>The performance of the more typical and difficult 
+case, when the view axis is more horizontal and much more terrain 
+is visible, will determine the minimum system frame-rate and hence 
+the effectiveness of the algorithm.</span>
+</p>
+<p class="MsoPlainText">
+<span>Instead 
+of screen-space geometric error, I advocate doing a similar test 
+which results in 3D view-space error proportional to view distance.<span>  </span>It's really very similar to the screen-space-error 
+test, but without the issues I mention above.<span>  
+</span>It involves only three quantities: an approximation 
+of the viewpoint-vertex distance called the L1-norm, the 
+vertex error, and a detail threshold constant.<span>  </span>Here it is:</span>
+</p>
+<p class="MsoPlainText">
+L1 
+= max(abs(vertx - viewx), abs(verty - viewy), abs(vertz -    &amp;nbspviewz)); 
+<br>
+enabled = error * Threshold &lt; L1; 
+</p>
+<p class="MsoPlainText">
+<span>You 
+probably recognize the L1-norm, even if you didn't know it had a 
+fancy name.<span>  </span>In practice, using 
+the L1-norm instead of the true viewpoint distance will result 
+in slightly more subdivision along the diagonals of the horizontal 
+terrain plane.<span>  </span>I've never been 
+able to detect this effect by eye, so I don't worry much 
+about it.<span>  </span>[4]  and others use view-space-z rather than the L1-norm, 
+which is theoretically even more appropriate than true viewpoint 
+distance. Nevertheless, the L1-norm works like a champ for 
+me, and [3] uses it too.</span>
+</p>
+<p class="MsoPlainText">
+<span>You 
+can treat the Threshold quantity as an adjust-for-best-results 
+slider, but it does have an intuitive geometric interpretation. 
+Roughly, it means: for a given view distance z, the worst vertex 
+error I'll tolerate is z / Threshold.<span>  
+</span>You could do some view-angle computations and relate 
+Threshold to maximum pixel error, but I've personally never 
+gone past the adjust-for-best-results stage.</span>
+</p>
+<p class="MsoPlainText">
+<span>So 
+that covers the vertex enabled test.<span>  
+</span>But if you were paying attention earlier, you may 
+also have noticed that I glossed over another point, perhaps more important: 
+during Update(), how do we know whether to subdivide a quadrant 
+or not?<span>  </span>The answer is to do 
+what I call a "box test".<span>  
+</span>The box test asks the question: given an axis-aligned 
+3D box enclosing a portion of terrain (i.e. a quadtree square), 
+and the maximum vertex error contained within that box, and no 
+other information about what's inside the box, is it possible that 
+the vertex enable test would return true?<span>  
+</span>If so, then we should subdivide the box.<span>  
+</span>If not, then there's no reason to subdivide. </span>
+</p>
+<p class="MsoPlainText">
+<span>The 
+beauty of it is, by doing the box test, we can potentially trim 
+out thousands of vertices from consideration in one fell swoop.<span>  </span> It makes Update() completely scalable: 
+its cost is not related to the size of the full dataset, 
+only to the size of the actual data that's included in the 
+current LOD mesh.<span>  </span>And as a side 
+benefit, the precomputed vertical box extent can be used 
+during Render() for frustum culling.</span>
+</p>
+<p class="MsoPlainText">
+<span>The 
+box test is conservative, in that a square's max-error could be for 
+a vertex on the opposite side of the box from the viewpoint, and 
+thus the vertex test itself would/will fail for that actual vertex, 
+whereas the box test might succeed.<span>  
+</span>But once we subdivide, e'll go ahead and do four more, 
+more accurate box tests on the sub-squares, and the penalty 
+for conservatism is fairly small: a few extra vertex and 
+box tests, and a couple extra vertices in the mesh.</span>
+</p>
+<p class="MsoPlainText">
+<span>Fortunately, 
+given the above simple vertex test, a suitable box test is easy to formulate:</span>
+</p>
+<p>
+<span>bc[x,y,z] 
+== coordinates of box center<br>
+</span><span>ex[x,y,z] 
+== extent of box from the center (i.e. 1/2 the box dimensions) <br>
+</span><span>L1 
+= max(abs(bcx - viewx) - exx, abs(bcy - viewy) - exy, abs(bcz - viewz) 
+- exz)<br>
+</span><span>enabled 
+= maxerror * Threshold &lt; L1</span>
+</p>
+<hr name="false">
+<p>
+<span><strong>Details</strong></span>
+</p>
+<p class="MsoPlainText" align="left">
+<span></span><span>That 
+covers the essentials of the algorithm.<span>  
+</span>What's left is a mass</span><span> 
+of details, some of them crucial.  First 
+of all, where is the height data actually stored?<span>  </span>In all of the previously-published algorithms, there 
+is a regular grid of height values (and other bookkeeping 
+data), on top of which the mesh is implicitly [1] &amp; [3] 
+or explicitly [3] defined.<span>  </span>The key innovation of my algorithm 
+is that the data is actually stored in an adaptive quadtree.<span>  
+</span>This results in two major benefits.<span> </span>First, 
+storage can be allocated adaptively according to the actual dataset 
+or the needs of the application; e.g. less storage can be used 
+in smoother areas or areas where the viewpoint is not expected 
+to travel.<span> </span>Second, the tree can grow or shrink dynamically 
+according to where the viewpoint is; procedural detail can 
+be added to the region near the viewpoint on-the-fly, and 
+deleted when the viewpoint moves on.</span>
+</p>
+<p class="MsoPlainText">
+<span>In 
+order to store heightfield information in a quadtree, each quadtree 
+square must contain height values for at least its center vertex 
+and two of its edge vertices.<span>  </span>All 
+of the other vertex heights are contained in other nearby 
+nodes in the tree.<span>  </span>The heights 
+of the corner vertices, for instance, come from the parent 
+quadtree square. The remaining edge vertex heights are stored 
+in neighboring squares. In my current implementation, I actually 
+store the center height and all four edge heights in the 
+quadtree square structure.<span>  </span>This simplifies things because all the necessary data 
+to process a square is readily available within the square 
+or as function parameters. The upshot is that the height 
+of each edge vertex is actually stored twice in the quadtree.</span>
+</p>
+<p class="MsoPlainText">
+<span>Also, 
+in my current implementation, the same quadtree used for heightfield 
+storage is also used for meshing.<span>  </span>It 
+should be possible to use two separate heightfields, one 
+for heightfield storage and one for meshing.<span>  
+</span>The potential benefits of such an approach are discussed 
+later.</span>
+</p>
+<p class="MsoPlainText">
+<span>A 
+lot of the tricky implementation details center around the shared 
+edge vertices between two adjacent squares.<span>  
+</span>For instance, which square is responsible for doing 
+the vertex-enabled test on a given edge vertex?<span>  
+</span>My answer is to arbitrarily say that a square only tests 
+its east and south edge vertices.<span>  </span>A 
+square relies on its neighbors to the north and to the west 
+to test the corresponding edge vertices.</span>
+</p>
+<p class="MsoPlainText">
+<span>Another 
+interesting question is, do we need to clear all enabled flags 
+in the tree at the beginning of Update(), or can we proceed directly 
+from the state left over from the previous frame?<span>  </span>My answer is, work from the previous state (like [2], 
+but unlike [1] and [4]). Which leads to more details: 
+we've already covered the conditions that allow us to enable 
+a vertex or a square, but how do we know when we can disable 
+a vertex or a square?<span>  </span>Remember 
+from the original Update() explanation, the enabling of a 
+vertex can cause dependent vertices to also be enabled, rippling 
+changes through the tree.<span>  </span>We can't just disable a vertex in 
+the middle of one of these dependency chains, if the vertex 
+depends on enabled vertices.<span>  </span>Otherwise 
+we'd either get cracks in the mesh, or important enabled 
+vertices would not get rendered.</span>
+</p>
+<p class="MsoPlainText">
+<span>If 
+you take a look at Figure 8, you'll notice that any given edge 
+vertex has four adjacent sub-squares that use the vertex as a 
+corner. If any vertex in any of those sub-squares is enabled, 
+then the edge vertex must be enabled.<span>  
+</span>Because the square itself will be enabled whenever 
+a vertex within it is enabled, one approach would be to just check 
+all the adjacent sub-squares of an edge vertex before disabling 
+it.<span>  </span>However, in my implementation, that would be 
+costly, since finding those adjacent sub-squares involves 
+traversing around the tree.<span>  </span>Instead, I maintain a reference count for each 
+edge vertex. The reference count records the number of adjacent 
+sub-squares, from 0 to 4, which are enabled.<span>  
+</span>That means that every time a square is enabled or 
+disabled, the reference counts of its two adjacent edge vertices 
+must be updated.<span>  </span>Fortunately, 
+the value is always in the range [0,4], so we can easily 
+squeeze a reference count into three bits.</span>
+</p>
+<table align="center" bgcolor="#ffffff" border="0" cellpadding="3" cellspacing="0" width="75%">
+	<tbody>
+		<tr>
+			<td><img src="continuous_lod_terrain_meshing_.php_files/figure_08.gif" alt="" height="262" width="496"></td>
+		</tr>
+		<tr>
+			<td height="2"> 
+			<p align="center">
+			<strong>Figure 
+			8. Each edge vertex has four adjacent sub-squares which use it 
+			as a corner. If any of those squares are enabled, then the edge 
+			vertex must be enabled. For example, the black vertex must be 
+			enabled if any of the four gray squares are enabled. </strong>
+			</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+<p class="MsoPlainText">
+<span>Thus 
+the disable test for an edge vertex becomes straightforward: if 
+the vertex is currently enabled, and the associated reference 
+count is zero, and the vertex test with the current viewpoint 
+returns false, then disable the edge vertex.<span>  
+</span>Otherwise leave it alone. The conditions 
+for disabling a square are fairly straightforward: if the 
+square is currently enabled, and it's not the root of the tree, 
+and none of its edge vertices are enabled, and none of its 
+sub-squares are enabled, and the square fails the box test for 
+the current viewpoint, then disable it.</span>
+</p>
+<p class="MsoPlainText" align="left">
+<span><strong>Memory</strong></span>
+</p>
+<p class="MsoPlainText">
+<span></span><span>A 
+very important issue with this (or any) LOD method is memory consumption.<span> </span>In a fully populated quadtree, a single quadtree 
+square is equivalent to about three vertices of an ordinary 
+heightfield, so it is imperative to keep the square data-structure 
+as compact as possible.<span>  </span>Fortunately, the needs of the Update() and 
+Render() algorithms do not require each square to contain 
+all the information about 9 vertices.<span>  
+</span>Instead, this is the laundry list of required data: </span>
+</p>
+<p class="MsoPlainText">
+&nbsp;
+</p>
+<ul>
+	<li>5 vertex 
+	heights (center, and edges verts east, north, west, south)</li>
+	<li>6<span> 
+	error values (edge verts east and south, and the 4 child squares)</span></li>
+	<li><span>2 
+	sub-square-enabled reference counts (for east and south verts)</span></li>
+	<li><span>8 
+	1-bit enabled flags (for each edge vertex and each child square)</span></li>
+	<li><span>4 
+	child-square pointers</span></li>
+	<li><span>2 
+	height values for min/max vertical extent</span></li>
+	<li><span>1 
+	1-bit 'static' flag, to mark nodes that can't be deleted</span></li>
+</ul>
+<p>
+&nbsp;
+</p>
+<p class="MsoPlainText">
+<span>Depending 
+on the needs of the application, the height values can usually 
+be squeezed comfortably into 8 or 16 bits.<span>  
+</span>The error values can use the same precision, or you 
+can also do some non-linear mapping voodoo to squeeze them 
+into smaller data sizes.<span>  </span>The reference counts can fit into one byte along with 
+the static flag. The enabled flags fit in one byte.<span>  
+</span>The size of the child-square pointers depends on the 
+maximum number of nodes you anticipate.<span>  </span>I typically see node counts in the 
+hundreds of thousands, so I would say 20 bits each as a minimum.<span>  
+</span>The min/max vertical values can be squeezed in various 
+ways if desired, but 8 bits each seems like a reasonable 
+minimum.<span>  </span>All told, this amounts 
+to at least 191 bits (24 bytes) per square assuming 8-bit 
+height values.<span>  </span>16-bit height 
+values bring the total to at least 29 bytes.<span>  
+</span>A 32-byte sizeof(square) seems like a good target 
+for a thrifty implementation.<span>  </span>36 
+bytes is what I currently live with in <em>Soul Ride</em>, 
+because I haven't gotten around to trying to bit-pack the 
+child pointers.<span>  </span>Another byte-saving 
+trick I use in <em>Soul Ride</em> is to use a fixed-pool allocator 
+replacement for quadquare::new() and delete().<span>  
+</span>You can eliminate whatever overhead the C++ library 
+imposes (at least 4 bytes I would expect) in favor of a single 
+allocated bit per square.</span>
+</p>
+<p class="MsoPlainText">
+<span>There 
+are various compression schemes and tricks that could be used to 
+squeeze the data even smaller, at the expense of complexity and 
+performance degradation.<span>  </span>In 
+any case, 36 bytes per 3 vertices is not entirely unrespectable.<span>  
+</span>That's 12 bytes/vertex.<span>  </span>[1] 
+reports implementations as small as 6 bytes per vertex.<span>  
+</span>[2] only requires storage of vertex heights and "wedgie 
+thicknesses", so the base data could be quite tiny by 
+comparison.<span>  </span>[4], using a modified 
+[2], reports the storage of wedgie thicknesses at a fraction 
+of the resolution of the height mesh, giving further savings.</span>
+</p>
+<p class="MsoPlainText">
+<span>However, 
+such comparisons are put in a different light when you consider 
+that the quadtree data structure is completely adaptive: in very 
+smooth areas or areas where the viewer won't ever go near, you 
+need only store sparse data.<span>  
+</span>At the same time, in areas of high importance to the 
+game, you can include very detailed features; for example 
+the roadway in a driving game can have shapely speed bumps and 
+potholes.</span>
+</p>
+<p class="MsoPlainText" align="left">
+<span><strong>Geomorphs</strong></span>
+</p>
+<p class="MsoPlainText">
+<span></span><span>[2] 
+and [3] go into some detail on "vertex morphing", or 
+"geomorphs".<span>  </span>Basically, geomorphing is a technique whereby 
+when vertices are enabled, they smoothly animate from their 
+interpolated position to their correct position.<span>  
+</span>It looks great and eliminates unsightly popping; see 
+McNally's TreadMarks for a nice example.</span>
+</p>
+<p class="MsoPlainText">
+<span>Unfortunately, 
+doing geomorphs requires storing yet another height value 
+for the vertices that must morph, which would present a real data-size 
+problem for the adaptive quadtree algorithm as I've implemented 
+it.<span>  </span>It could result in adding 
+several bytes per square to the storage requirements, which 
+should not be done lightly. [3] incurs the same per-vertex 
+storage penalty, but [2] avoids it because it only has to 
+store the extra height values for vertices that are actually 
+in the current mesh, not for every vertex in the dataset. 
+</span>
+</p>
+<p class="MsoPlainText">
+<span>I 
+have three suggestions for how to address the geomorph issue.<span>  </span>The first alternative is to spend 
+the extra memory.<span>  </span>The second 
+alternative is to optimize the implementation, so that really small 
+error tolerances would be practical and geomorphs unnecessary. 
+Moore's Law may take care of this fairly soon without any additional 
+software work.<span>  </span>The third alternative 
+is to split the quadtree into two trees, a "storage 
+tree" and a "mesh tree".<span>  </span>The storage tree would hold all 
+the heightfield information and precomputed errors, but none 
+of the transitory rendering data like enabled flags, reference 
+counts, geomorph heights, etc.<span>  </span>The 
+mesh tree would hold all that stuff, along with links into the storage 
+tree to facilitate expanding the mesh tree and accessing 
+the height data.<span>  </span>The mesh tree 
+could be relatively laissez-faire about memory consumption, because 
+its size would only be proportional to the amount of currently-rendered 
+detail.<span>  </span>Whereas the storage 
+tree, because it would be static, could trim some fat by 
+eliminating most of the child links.</span>
+</p>
+<p>
+<span>The 
+storage-tree/mesh-tree split could also, in addition to reducing 
+total storage, increase data locality and improve the algorithm's 
+cache usage.</span>
+</p>
+<hr name="false">
+<p>
+<span><strong>Working 
+Code</strong></span>
+</p>
+<p class="MsoPlainText" align="left">
+<span></span><span>The 
+<em>Soul Rider </em></span><span> 
+engine is closed source for the forseeable future, but I did re-implement 
+the essentials of this algorithm as a companion <a href="http://www.gamasutra.com/features/20000228/quaddemo.zip">demo</a> 
+for this article.<span>  </span>The 
+demo source is freely available for you to examine, experiment 
+with, and modify and incorporate into your own commercial 
+or non-commercial projects.<span> </span>I 
+only ask that if you do incorporate the demo source into 
+a project, please acknowledge me in the credits!</span>
+</p>
+<p class="MsoPlainText">
+<span>I 
+didn't sweat the data-packing issue in the demo code.<span>  </span>That would be a good area to experiment with.<span>  
+</span>Also, I didn't implement frustum culling of squares, 
+but all the necessary data is readily available. </span>
+</p>
+<p class="MsoPlainText">
+<span>The 
+data included with the demo comes from USGS 7.5-minute DEMs of 
+the Grand Canyon (USGS).<span>  </span>At 
+Slingshot we have a proprietary tool that crunches the USGS 
+data and stitches neighboring DEMs together; I collected 
+36 datasets and resampled them at a lower resolution to make 
+the heightfield.<span>  </span>I made the 
+texture in a few minutes in Photoshop, by loading an 8-bits 
+per sample version of the heightfield as raw data, running 
+the Emboss filter on it to create shading, and adding some noise and 
+tinting.<span> </span>The texture is just 
+one big 1024x1024 image, stretched over the entire terrain.</span>
+</p>
+<p class="MsoPlainText">
+<span>The 
+data-loading code should be fairly self explanatory, so if you 
+have some of your own data you want to try, it should be easy 
+to get it in there.</span>
+</p>
+<p class="MsoPlainText">
+<span>The 
+program uses OpenGL and GLUT for 3D, window setup, and input.<span>  </span>I developed it under Win98 using 
+a TNT2 card, but I tried to avoid Windows-isms so it should 
+be easy to port to other systems that support GLUT.</span>
+</p>
+<p class="MsoPlainText" align="left">
+<span><strong>Exercises 
+for the Reader</strong></span>
+</p>
+<p class="MsoPlainText">
+<span></span><span>In 
+addition to the tighter data packing I mentioned, there are a few 
+other things in the <em>Soul Ride</em> engine which aren't in the 
+article demo.<span>  </span>The big one is a unique-full-surface texturing 
+system, the details of which are beyond the scope of this 
+article.<span>  </span>But I will mention 
+that good multi-resolution texturing, especially containing lighting, 
+is extremely beneficial for exploiting the unique features of 
+the quadtree terrain algorithm.</span>
+</p>
+<p class="MsoPlainText">
+<span>One 
+thing I haven't yet experimented with, but looking at the demo 
+code would be fairly easy to hack in, is on-demand procedural 
+detail. In my view, on-demand procedural detail looms large 
+in the future of computer graphics.<span>  
+</span>There just doesn't seem to be any other good way to 
+store and model virtual worlds to the detail and extent where they 
+really have the visual richness of the real world.<span>  
+</span>Fortunately, the problem is completely tractable, 
+if complicated.<span>  </span>I think this 
+quadtree algorithm, because of its scalability, can be helpful 
+to other programmers working on on-demand procedural detail.</span>
+</p>
+<p class="MsoPlainText">
+<span>Yet 
+another cool extension would be demand-paging of tree subsections.<span>  </span>It actually doesn't seem too difficult; basically 
+you'd flag certain quadsquares at any desired spot in the 
+hierarchy as being "special"; they'd contain links 
+to a whole giant sub-tree stored on disk, with the max-error 
+for the sub-tree precomputed and stored in the regular tree.<span>  
+</span>Whenever Update() would try to enable a "special" 
+square, it would actually go off and load the sub-tree and link 
+it in before continuing.<span>  </span>Getting 
+it to all stream in in the background without hitching would 
+be a little interesting, but I I think doable.<span>  
+</span>It would result in basically an infinite paging framework.<span>  </span>On-demand procedural detail could exploit the 
+same basic idea; instead of chugging the disk drive to get 
+pre-made data, you'd run a terrain-generation algorithm to 
+make the data on the fly.</span>
+</p>
+<p class="MsoPlainText">
+<span>And 
+another suggestion for further work would be to identifying and 
+eliminating performance bottlenecks.<span>  
+</span>I suspect that there's some headroom in the code for 
+making better use of the graphics API interface.</span>
+</p>
+<p class="MsoPlainText" align="left">
+<span><strong>Acknowledgements</strong></span>
+</p>
+<p class="MsoPlainText">
+<span></span><span>In 
+addition to the authors of the papers (listed below under References) 
+which this work is based on, I would also like to send shout-outs 
+to Jonathan Blow, Seumas McNally and Ben Discoe for their 
+various thought-provoking emails and comments, and also to 
+the participants in the <a href="mailto:algorithms@3dgamedev.com">algorithms@3dgamedev.com</a> 
+mailing list, where I've learned a lot of extremely interesting 
+stuff from other programmers about different approaches and 
+the ins-and-outs of terrain rendering.</span>
+</p>
+<p class="MsoPlainText" align="left">
+<span><strong>References</strong></span>
+</p>
+<p class="MsoPlainText">
+<span></span><span>[1] 
+Peter Lindstrom, David Koller, William Ribarsky, Larry F. Hodges, 
+Nick Faust and Gregory A. Turner.<span>  
+</span>"Real-Time, Continuous Level of Detail Rendering 
+of Height Fields".<span>  </span>In <em>SIGGRAPH 
+96 Conference </em></span><em><span>Proceedings</span></em><span>, 
+pp. 109-118, Aug 1996.</span>
+</p>
+<p class="MsoPlainText">
+<span>[2] 
+Mark Duchaineau, Murray Wolinski, David E. Sigeti, Mark C. Miller, 
+Charles Aldrich and Mark B. Mineev-Weinstein.<span>  
+</span>"ROAMing Terrain: Real-time, Optimally Adapting 
+Meshes."<span>  </span><em>Proceedings 
+of the </em></span><em><span>Conference 
+on Visualization '97</span></em><span>, 
+pp. 81-88, Oct 1997.</span>
+</p>
+<p class="MsoPlainText">
+<span>[3] 
+Stefan R&#246;ttger, Wolfgang Heidrich, Philipp Slusallek, Hans-Peter 
+Seidel.<span>  </span><em>Real-Time Generation of Continuous Levels 
+of Detail for </em></span><em><span>Height 
+Fields.<span>  </span>Technical Report</span></em><span> 
+13/1997, Universit&#228;t Erlangen-Nürnberg.</span>
+</p>
+<p class="MsoPlainText">
+<span>[4] 
+Seumas McNally. <a href="http://www.longbowdigitalarts.com/seumas/progbintri.html%20">http://www.LongbowDigitalArts.com/seumas/progbintri.html 
+</a>.<span>  </span>This is a good 
+practical introduction to Binary Triangle Trees from [2].<span>  </span>Also see <a href="http://www.treadmarks.com%20/">http://www.TreadMarks.com 
+</a>, a game which uses methods from [2].</span>
+</p>
+<p class="MsoPlainText">
+<span>[5] 
+Ben Discoe, <a href="http://www.vterrain.org/">http://www.vterrain.org</a> 
+.<span>  </span>This web site is an excellent 
+survey of algorithms, implementations, tools and techniques related 
+to terrain rendering.</span>
+</p>
+<p>
+<strong>Thatcher 
+Ulrich is the lead programmer for Slingshot Game Technology <a href="http://www.sshot.com/">www.sshot.com</a>, 
+which is working hard to make a snowboarding game that doesn't suck. 
+You can gaze at Thatcher's vacation photos at <a href="http://www.tulrich.com/">www.tulrich.com</a>, 
+or email him at <a href="mailto:tu@tulrich.com">tu@tulrich.com</a>. 
+</strong>
+</p>
+
+
+<p style="background: #eee; text-align: center; padding: 5px;"><a href="http://www.gamasutra.com/view/feature/131841/continuous_lod_terrain_meshing_.php">Return to the full version of this article with comments</a><br>Copyright &#169; 2012 UBM Techweb</p>
+
+
+</div> 
+
+</body></html>
