@@ -1,0 +1,48 @@
+ This demo requires the GL_ARB_texture_cube_map extension 
+(GeForce, GeForce2, etc) and multitexture.
+
+ If you've got RedHat6.2 with the Mesa development environment and NVIDIA
+0.9x drivers (XFree4.0) installed correctly, typing 'make' should do everything 
+required. After building, cd to the src directory and run 'mba_nvdemo'.
+
+ If you're  using Windows, you have two build options: 
+cd to the src directory and type 'nmake -f Makefile.WIN32' for a command line 
+build, or open ENVMAP.dsp in VC++6. I used 'tmake' to generate these files - 
+if you're into cross-platform development, I highly recommend you check it out:
+http://www.trolltech.com/products/download/freebies/tmake.html
+ 
+ It is recommended to run this demo at 24bpp, otherwise the stencil
+buffer will be disabled (stencil buffer is not hardware accelerated at
+16bpp). Witb the stencil buffer disabled, things will look funky when viewed
+from outside the room walls.
+
+Command Line
+------------
+-timer x  : x  = number of milliseconds to pass to glutTimerFunc. 
+            0  = run as fast as possible
+			33 = max fps approx. 30 fps
+			16 = max fps approx. 60 fps (default)
+
+Keyboard
+--------
+'='     : increase viewing gamma by 0.1
+'-'     : decrease viewing gamma by 0.1
+'0'     : reset viewing gamma to 1.0
+<space> : toggle animation
+<tab>   : toggle fullscreen
+'c'     : reset camera transform
+'q'     : quit
+<esc>   : quit
+
+Mouse (camera transform):
+-------------------------
+<left button>   : left,right,up,down.
+<middle button> : zoom in/out
+<right button>  : track in/out
+
+
+Cheers,
+Mark B. Allan
+mallan@linuxstart.com
+http://www.reptilelabour.com
+
