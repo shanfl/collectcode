@@ -1,0 +1,92 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: Terrain - Win32 Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\DOCUME~1\Owner\LOCALS~1\Temp\RSP1D29.tmp" with contents
+[
+/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /Fp"Debug/Terrain.pch" /YX /Fo"Debug/" /Fd"Debug/" /FD /GZ /c 
+"C:\Work\src\Terrain\App.cpp"
+"C:\Work\src\Terrain\Camera.cpp"
+"C:\Work\src\Terrain\Console.cpp"
+"C:\Work\src\Terrain\Entity.cpp"
+"C:\Work\src\Terrain\glBbox.cpp"
+"C:\Work\src\Terrain\glMatrix.cpp"
+"C:\Work\src\Terrain\glQuat.cpp"
+"C:\Work\src\Terrain\glRgba.cpp"
+"C:\Work\src\Terrain\glVector2.cpp"
+"C:\Work\src\Terrain\glVector3.cpp"
+"C:\Work\src\Terrain\Ini.cpp"
+"C:\Work\src\Terrain\Map.cpp"
+"C:\Work\src\Terrain\MapTexture.cpp"
+"C:\Work\src\Terrain\Math.cpp"
+"C:\Work\src\Terrain\Pointer.cpp"
+"C:\Work\src\Terrain\Render.cpp"
+"C:\Work\src\Terrain\Sky.cpp"
+"C:\Work\src\Terrain\Terrain.cpp"
+"C:\Work\src\Terrain\Texture.cpp"
+"C:\Work\src\Terrain\Win.cpp"
+"C:\Work\src\Terrain\World.cpp"
+]
+Creating command line "cl.exe @C:\DOCUME~1\Owner\LOCALS~1\Temp\RSP1D29.tmp" 
+Creating temporary file "C:\DOCUME~1\Owner\LOCALS~1\Temp\RSP1D2A.tmp" with contents
+[
+kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /incremental:yes /pdb:"Debug/Terrain.pdb" /debug /machine:I386 /out:"Debug/Terrain.exe" /pdbtype:sept 
+.\Debug\App.obj
+.\Debug\Camera.obj
+.\Debug\Console.obj
+.\Debug\Entity.obj
+.\Debug\glBbox.obj
+.\Debug\glMatrix.obj
+.\Debug\glQuat.obj
+.\Debug\glRgba.obj
+.\Debug\glVector2.obj
+.\Debug\glVector3.obj
+.\Debug\Ini.obj
+.\Debug\Map.obj
+.\Debug\MapTexture.obj
+.\Debug\Math.obj
+.\Debug\Pointer.obj
+.\Debug\Render.obj
+.\Debug\Sky.obj
+.\Debug\Terrain.obj
+.\Debug\Texture.obj
+.\Debug\Win.obj
+.\Debug\World.obj
+]
+Creating command line "link.exe @C:\DOCUME~1\Owner\LOCALS~1\Temp\RSP1D2A.tmp"
+<h3>Output Window</h3>
+Compiling...
+App.cpp
+Camera.cpp
+Console.cpp
+Entity.cpp
+glBbox.cpp
+glMatrix.cpp
+glQuat.cpp
+glRgba.cpp
+glVector2.cpp
+glVector3.cpp
+Ini.cpp
+Map.cpp
+MapTexture.cpp
+Math.cpp
+Pointer.cpp
+Render.cpp
+Sky.cpp
+Terrain.cpp
+Texture.cpp
+Win.cpp
+World.cpp
+Linking...
+
+
+
+<h3>Results</h3>
+Terrain.exe - 0 error(s), 0 warning(s)
+</pre>
+</body>
+</html>
