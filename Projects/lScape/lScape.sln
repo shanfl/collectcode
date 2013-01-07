@@ -1,0 +1,27 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{059D6162-CD51-11D0-AE1F-00A0C90FFFC3}") = "glBase", "..\glBase\glBase.dsp", "{B8E795F0-1E3D-44C1-B159-9823483C3D8B}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lScape", "lScape.vcproj", "{397BB631-717E-4068-850A-1AF2DD03AD11}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		Release = Release
+	EndGlobalSection
+	GlobalSection(ProjectDependencies) = postSolution
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{397BB631-717E-4068-850A-1AF2DD03AD11}.Debug.ActiveCfg = Debug|Win32
+		{397BB631-717E-4068-850A-1AF2DD03AD11}.Debug.Build.0 = Debug|Win32
+		{397BB631-717E-4068-850A-1AF2DD03AD11}.Release.ActiveCfg = Release|Win32
+		{397BB631-717E-4068-850A-1AF2DD03AD11}.Release.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal

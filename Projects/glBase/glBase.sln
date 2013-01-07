@@ -1,0 +1,23 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "glBase", "glBase.vcproj", "{DD330CE5-FBB9-4949-A529-A04239D34E2F}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		Release = Release
+	EndGlobalSection
+	GlobalSection(ProjectDependencies) = postSolution
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{DD330CE5-FBB9-4949-A529-A04239D34E2F}.Debug.ActiveCfg = Debug|Win32
+		{DD330CE5-FBB9-4949-A529-A04239D34E2F}.Debug.Build.0 = Debug|Win32
+		{DD330CE5-FBB9-4949-A529-A04239D34E2F}.Release.ActiveCfg = Release|Win32
+		{DD330CE5-FBB9-4949-A529-A04239D34E2F}.Release.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal
