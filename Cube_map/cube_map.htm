@@ -1,0 +1,675 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="Author" content="Mark Kilgard">
+   <meta name="GENERATOR" content="Mozilla/4.61 [en] (Win98; U) [Netscape]">
+   <title>OpenGL Cube Map Texturing</title>
+</head>
+<body>
+
+<dl>
+<center>
+<dt>
+<b><font size=+3>OpenGL Cube Map Texturing</font></b></dt></center>
+
+<center>
+<dd>
+<i>Copyright <a href="http://www.nvidia.com">NVIDIA Corporation</a>, 1999.</i></dd></center>
+
+<center>
+<dd>
+<i>Commercial publication in written, electronic, or other forms without
+expressed written permission is prohibited.</i></dd></center>
+
+<center>
+<dd>
+<i>Electronic redistribution for educational or private use is permitted.</i></dd></center>
+</dl>
+
+<h1>
+Abstract</h1>
+This web tutorial explains the motivation and purpose of hardware cube
+mapping.&nbsp; Examples of cube map textured scenes are shown demonstrating
+environment mapping, stable specular highlights, and "bump map" like per-pixel
+lighting effects.&nbsp; For programmers, OpenGL's multi-vendor <tt>EXT_texture_cube_map</tt>
+extension is described with links to working sample code.
+<h1>
+Introduction</h1>
+Hardware accelerated texture mapping is very common today.&nbsp; What once
+was reserved for only high-end workstations and flight simulators is now
+a standard feature in today's inexpensive PCs and home video games.&nbsp;
+The idea is simple.&nbsp; Locations on a flat 2D image (the texture map)
+are attached to vertices of a 3D model.&nbsp; When the 3D model is rendered,
+the texture image is "wallpapered" onto the geometry of the 3D model.&nbsp;
+When the 3D model animates or changes shape, the texture image stays stuck
+to the model.&nbsp; Here is an example:
+<center>
+<p><img SRC="torus2dtex.jpg" height=278 width=297></center>
+
+<p>The texture with the phrase "OpenGL sets the standard" on it is wrapped
+around the surface of the torus (a fancy word for doughnut).&nbsp; We could
+just as easily applied a different texture image to give the torus a wood-grain
+appearance.&nbsp; The point is that we can map any flat image onto whatever
+geometry we want to render.
+<p>This conventional form of texture mapping is now wildly successfully.&nbsp;
+Nearly every 3D computer game today uses this form of texture mapping.&nbsp;
+Yet this conventional form of texture mapping is not well suited for all
+circumstances.&nbsp; Think of an object such as a silver candlestick.&nbsp;
+The shiny surface of the candlestick reflects the surroundings of the candlestick.&nbsp;
+Because the surface is reflective, there is not a single image that can
+be wallpapered onto the surface.&nbsp; If either the candlestick or the
+viewer position changes, the reflection in the candlestick changes.&nbsp;
+Instead of matching up candlestick vertices to fixed 2D locations on a
+flat texture image, reflective surfaces map locations on the object's surface
+to the appropriate reflected <i>direction</i> in the 360 degree environment
+surrounding the object.
+<p>Unfortunately the conventional approach to hardware texture mapping
+is not well suited to this problem.&nbsp; Instead of mapping a surface
+position to a location on a flat 2D texture image, we really want to map
+surface positions to <i>directions</i> in a 360 degree environment.
+<p>Look at the world around you.&nbsp; By just rotating your head and moving
+your eyes, you can look in a whole range of directions.&nbsp; Your environment
+can be thought of as an omni-directional image centered at your head.&nbsp;
+This is fundamentally different than looking up a location in a 2D image
+based on a 2D (<i>x,y</i>) position.&nbsp; If your environment could be
+encoded as a texture image, it would ideally be accessed via a 3D direction
+instead of a 2D position.
+<h1>
+Encoding an Environment with a Cube Map</h1>
+Cube map texturing is a form of texture mapping that uses a 3D direction
+vector (a fancy phrase that means nothing more than a direction) to index
+into a texture that is six square 2D textures arranged like the faces of
+a cube.&nbsp; Again consider the environment around you now.&nbsp; You
+can "capture" a 360 degree view of your surroundings by standing in one
+place and taking six photographs each at an orthogonal 90 degree view from
+the others.&nbsp; Below is a set of six such images that capture an outdoor
+patio environment:
+<center>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<img SRC="cm_back.jpg" height=128 width=128>
+back&nbsp;<img SRC="cm_bottom.jpg" height=128 width=128> bottom
+<br><img SRC="cm_front.jpg" height=128 width=128> front&nbsp;<img SRC="cm_left.jpg" height=128 width=128>&nbsp;
+left
+<br><img SRC="cm_right.jpg" height=128 width=128>&nbsp; right&nbsp;<img SRC="cm_top.jpg" height=128 width=128>
+top</center>
+
+<p>Here's a diagram showing how a different set of cube map images form
+the faces of a cube.
+<center>
+<p><img SRC="cm.jpg" height=431 width=563></center>
+
+<h1>
+A Cube Map Texturing Example</h1>
+Using hardware-accelerated cube map texturing, it is possible to render
+a dynamic object that reflects the above patio environment.&nbsp; The cool
+part is that this can be done in real-time!&nbsp; Below&nbsp; is a snapshot
+of a program called "bubble" running on a PC using NVIDIA's new GeForce
+256 Graphics Processing Unit (GPU).
+<center>
+<p><img SRC="bubble.jpg" height=387 width=505></center>
+
+<p>The actual program uses a physics model to distort the bubble's shape
+in real-time.&nbsp; The undulating bubble's surface results in a dynamic
+reflection of the patio environment.
+<h1>
+Various Environment Mapping Approaches</h1>
+Computer graphics researchers call the above rendering technique <i>environment
+mapping</i>.&nbsp; The technique is not new.&nbsp; Blinn and Newell first
+published the idea way back in 1976.&nbsp; Movies such as The Abyss and
+Terminator 2 have popularized the technique (keep in mind that these movie
+special effects are all computed off-line, not interactively).
+<p>Cube mapping is just one way to implement environment mapping.&nbsp;
+Other approaches such as <i>sphere mapping</i> and <i>dual paraboloid mapping</i>
+(as developed by <a href="http://www.mpi-sb.mpg.de/~heidrich/Papers/HWWS.1998.ps.gz">Heidrich
+&amp; Seidel</a>) can generate similar effects using only conventional
+texture mapping, but both techniques have serious drawbacks that limit
+their general use.&nbsp; Sphere mapping is simple and directly supported
+by OpenGL, but is view-dependent meaning that a different sphere map texture
+image is required for each different eye position. Additionally, sphere
+mapping is subject to unsightly "speckle" artifacts at the glancing edges
+of sphere mapped objects. The following image shows the speckle artifacts
+from sphere mapping:
+<center>
+<p><img SRC="speckle.png" height=289 width=333></center>
+
+<p>Dual paraboloid mapping overcome these limitations, but is more expensive
+because it requires two texture units or two rendering passes.&nbsp; Dual
+paraboloid mapping also requires involved texture coordinate generation
+math (unless a special OpenGL texgen reflection extension is supported).&nbsp;
+Authoring texture images for either sphere maps or dual paraboloid maps
+is non-obvious because both require special image warping operations.&nbsp;
+Examples of the necessary warping for sphere and dual paraboloid maps is
+shown in the sample textures shown below:
+<center>
+<p><img SRC="spheremap.jpg" height=150 width=152>&nbsp; example sphere map
+image
+<p><img SRC="dp_front.jpg" height=128 width=128>&nbsp; front dual paraboloid
+map&nbsp;<img SRC="dp_back.jpg" height=128 width=127>&nbsp; back dual
+paraboloid map</center>
+
+<p>Cube map texturing is free from the artifacts of sphere mapping.&nbsp;
+Unlike dual paraboloid maps, cube maps require only a single texture unit
+and can be applied in a single rendering pass.&nbsp; Because the texture
+images for cube maps are merely the six cube faces of a cube environment,
+the cube map textures are easier to acquire from photographs or render
+dynamically.&nbsp; Cube maps also fully utilize the entire texture image
+resolution.&nbsp; Sphere and paraboloid maps uses only 78% of the actual
+texture resolution available in the texture map image than sphere or dual
+paraboloid maps which require extra warping steps.
+<p>Conceptually, cube map texturing is more straightforward than using
+the warped sphere map or dual paraboloid map approaches, but cube map texturing
+requires the special ability to access six texture images at once.&nbsp;
+This requires more sophisticated texturing hardware.&nbsp; While cube map
+texturing is more complex than conventional texture mapping, the rapid
+pace of semiconductor miniaturization has made single-chip implementations
+of hardware cube map texturing a reality today for consumer PCs.&nbsp;
+NVIDIA's GeForce 256 GPU is the first commercial consumer GPU to support
+cube map texturing.
+<p>Hardware is only useful if software interfaces are available to expose
+the hardware's capabilities.&nbsp; Fortunately in the case of texture cube
+mapping, both major Application Programming Interfaces (APIs) for 3D graphics
+now have support for cube map texturing.&nbsp; Microsoft's Direct3D API
+for Windows PCs supports cube map textures with its DirectX 7 update.&nbsp;
+OpenGL, the industry-standard API for Windows, Macs, Linux, and Unix workstations,
+now supports a multi-vendor <tt>EXT_texture_cube_map</tt> extension for
+cube map texturing.&nbsp; While support for cube map textures is new and
+only the newest hardware supports cube map texturing, software standards
+are in place today.&nbsp; NVIDIA's GeForce 256 supports both the DirectX
+7 cube mapping and OpenGL <tt>EXT_texture_cube_map</tt> APIs today.
+<p>While cube maps are superior to the other approaches described, only
+state-of-the-art hardware supports cube map textures.&nbsp; The older sphere
+map and dual paraboloid methods for environment mapping may still be useful
+as a fallback when hardware cube map textures are not available.&nbsp;
+Cube map textures are more straightforward and efficient, but it good that
+techniques exist to support older hardware too.
+<h1>
+Other Applications of Cube Maps</h1>
+Cube map textures are immediately useful for environment mapping effects
+as shown above, but there are many other cube map texture applications.
+<h2>
+Stable Specular Highlights</h2>
+Computer Aided Design (CAD) programs communicate a sense of surface curvature
+by adding specular lighting effects when displaying 3D objects.&nbsp; The
+bright spot that is visible on pool balls is an example of such a specular
+highlight.&nbsp; Such highlights provide vital visual cues about surface
+curvature because people are so familiar with specular highlights on real
+objects.
+<p>One problem that plagues CAD programs is poor sampling of these specular
+highlights.&nbsp; The problem arises because CAD programs typically render
+3D objects as solid meshes, yet only perform the expensive specular lighting
+computation at the mesh vertices.&nbsp; The lit colors computed at the
+mesh vertices are then interpolated across the mesh's surface.&nbsp; Unfortunately,
+if the mesh is not tight enough, specular highlights are poorly sampled.&nbsp;
+When rotating the object, this leads to "wobbly" specular highlights where
+the brightness of the highlight depends on how close it is to vertices
+within the mesh.&nbsp; The important specular visual cue is compromised.&nbsp;
+Making a tighter mesh is not always practical because the tighter the mesh,
+the more expensive and slower it is to render the object.&nbsp; Ideally,
+specular highlights should be bright and stable without worrying about
+the density of the object's vertex mesh.
+<p>Cube maps provide a straightforward means to render stable specular
+highlights.&nbsp; Multiple specular highlights can be encoded in a cube
+map texture.&nbsp; This cube map texture can then be accessed based on
+the surface's reflection vector.&nbsp; Instead of computing the color per-vertex
+and interpolating the color across the surface, the hardware only computes
+the reflection vector (cheaper than computing the actual specular lighting
+contribution) and interpolates this vector to supply cube map texture coordinates.&nbsp;
+The result is bright, stable specular highlight and a truer sense of surface
+curvature.&nbsp; Below is an example using cube map textures for stable
+specular highlights.&nbsp; The image on the left uses a cube map texture
+and the white and orange specular highlights are clearly visible.&nbsp;
+The image on the right uses conventional per-vertex lighting; its specular
+highlights are murky in the static image below and wobble when the model
+is rotated interactively.
+<center>
+<p><img SRC="perpixel.jpg" height=350 width=700></center>
+
+<p>Cube maps are a better alternative to massive over-tesselation of models
+to achieve stable specular highlights.&nbsp; Another advantage of using
+cube map textures to generate stable specular highlights is that the number
+of specular light sources (all encoded in a single cube map texture) is
+independent of the rendering performance.&nbsp; Additional specular highlights
+can be encoded in a single cube map texture map (in advance of interactive
+rendering) with no additional interactive rendering overhead.
+<p>The one limitation of this approach is that the specular light sources
+must be either distant or infinite lights for this scheme to work well.&nbsp;
+Fortunately, CAD programs often use infinite light sources.
+<h2>
+Skylight Illumination</h2>
+Another use for cube maps is accurately modeling outdoor illumination.&nbsp;
+Computer graphics programmers often model sunlight as an infinite light.&nbsp;
+This is a gross simplification of the actual outdoor illumination and leads
+to unrealistic outdoor lighting.&nbsp; While much of the light outdoors
+does come directly from the sun, atmospheric scattering results in the
+entire sky acting as a light source.&nbsp; This is often referred to as
+skylight illumination.&nbsp; Time of day, cloud cover, and pollution all
+influence the skylight's illumination.
+<p>A cube map can capture the diffuse contribution from skylight illumination.&nbsp;
+Accessing the cube map based on the surface normal vector (as opposed to
+the reflection vector used for stable highlights and environment maps)
+can provide a quick estimate of the diffuse illumination from the skylight.&nbsp;
+Computing a cube map for a particular skylight configuration is complex,
+but several computer graphics researchers have devoted considerable effort
+to modeling reasonable skylight illumination.
+<p>See the SIGGRAPH '99 paper "A Practical Analytic Model for Daylight"
+by Preetham, Shirley, and Smits.&nbsp; Other valuable references include
+Klassen's "Modeling the Effect of the Atmosphere on Light" (ACM Transactions
+on Graphics, July 1987) and Tadamura, et.al.'s "Modeling of Skylight and
+Rendering of Outdoor Scenes" (EUROGRAPHICS&nbsp; '93).
+<h2>
+Dynamic Cube Map Reflections</h2>
+The bubble program that was shown above as the first example of cube map
+texturing uses a <i>static</i> cube map containing the patio environment.&nbsp;
+While the bubble can move and distort itself and the viewer can move around
+the bubble in real-time, the reflected environment itself does not change.&nbsp;
+To reflect a dynamically changing environment, a program must regenerate
+the cube map texture each time the environment changes.
+<p>Dynamic cube map environment mapping does exactly that.&nbsp; A dynamic
+cube map texture is generated by first render the scene six times from
+the point of view of the reflective object.&nbsp; Each view is a different
+orthogonal 90 degree view frustum corresponding to one of the six faces
+of the cube map.&nbsp; In OpenGL, you can use the <tt>glCopySubTexImage2D</tt>
+command to copy each rendered cube face into the cube map. Once the dynamic
+environment has been rendered and copied into the face of the cube map
+texture, render the scene normally using the dynamic cube map texture when
+rendering the reflective object.
+<p>As you would expect, this is significantly more expensive than static
+cube map environment mapping because of all the extra rendering steps.&nbsp;
+It can still be done at interactive rates though.&nbsp; The following image
+was generated by a program called "guts" that implements dynamic cube map
+reflections:
+<center>
+<p><img SRC="guts.jpg" height=361 width=491></center>
+
+<p>In the guts program, the deforming bubble is now floating through a
+virtual intestinal tract (yummy, huh).&nbsp; As the bubble moves through
+the tract, the bubble constantly reflects the walls and features of the
+intestines.&nbsp; The image below shows the dynamically rendered faces
+of the cube map texture:
+<center>
+<p><img SRC="guts_cm.jpg" height=192 width=257></center>
+
+<p>This technique gets even more expensive if there are multiple reflective
+objects in the scene.&nbsp; Each reflective object typically requires its
+own unique dynamic environment map.&nbsp; And if reflective objects can
+reflect the reflections of other reflective objects, things get even more
+complicated.&nbsp; It is actually possible to generate recursively a set
+of dynamic cube maps of reflective objects reflecting each other.&nbsp;
+This approach can approximate some of the effects usually generated using
+ray tracing algorithms.
+<p>Just to demonstrate that this recursive approach is possible, the image
+below shows two reflective spheres.&nbsp; Look carefully and you will see
+that the lower sphere contains the reflection of the upper sphere!&nbsp;
+More recursions of dynamic cube mapping could generate the reflection of
+the lower sphere in the upper sphere, but since the image below takes 18
+rendering passes to generate cube faces, already the algorithm is impractical
+for interactive use.
+<center>
+<p><img SRC="fakeraytrace.jpg" height=304 width=403></center>
+
+<h2>
+Fancy Per-Pixel Lighting</h2>
+Cube maps provide an important building block for implementing per-pixel
+lighting effects.&nbsp; Per-pixel lighting involves computing diffuse,
+specular, and ambient lighting contributions for each rendered pixel (in
+contrast to computing the lighting contribution per-vertex and then interpolating
+the color over the surface).
+<p>The previously discussed environment mapping, stable specular highlights,
+and skylight illumination applications for cube maps are arguably just
+special cases of more general per-pixel lighting techniques.&nbsp; Because
+lighting computations rely so heavily on 3D direction vectors, cube maps
+that are accessed via direction vectors are natural for expressing per-pixel
+lighting operations.
+<p>State-of-the-art per-pixel lighting requires hardware support for per-pixel
+operations such as dot products and complex blending of texture results.&nbsp;
+The details of this are beyond the scope of this tutorial.&nbsp; The discussion
+here serves only to hint at how cube maps can be used in conjunction with
+advanced texture environment functionality.&nbsp; A cube map can be used
+to normalize vectors that are computed per-vertex and then interpolated
+across a polygon's interior.&nbsp; Lighting computations often require
+normalized vectors to operate correctly.&nbsp; A cube map can also be used
+to compute more complex functions.&nbsp; The half-angle vector used for
+Blinn-style specular highlights is the normalization of the view and light
+vectors.&nbsp; For a constant light vector (to a distant or infinite light),
+a cube map can generate the normalized half-angle given a varying view
+vector.
+<p>Here are a few examples of what is possible.&nbsp; All of these images
+were generated from OpenGL programs that run in real-time using a GeForce
+256 GPU.&nbsp; This first example shows a <i>single</i> polygon.&nbsp;
+A normal map texture supplies a wavy pattern to the surface.&nbsp; A cube
+map texture is used to compute the half-angle assuming a varying view vector.&nbsp;
+The directional light (indicated in yellow) supplies specular, diffuse,
+and ambient light contributions that are all computed per-pixel using a
+<i>single</i>
+multitextured rendering pass.
+<center>
+<p><img SRC="water1.jpg" height=294 width=640></center>
+
+<p>This second image demonstrates how only changing the light position
+results in a substantially different surface appearance.&nbsp; No texture
+image data was changed between the two images.&nbsp; Notice how the first
+image shows bright specular highlights across the polygon.&nbsp; These
+highlights are not visible in the second image due to the changed light
+position.
+<center>
+<p><img SRC="water2.jpg" height=297 width=640></center>
+
+<p>Ultimately, cube map-based per-pixel lighting techniques will result
+in startlingly complex surface appearances displayed at real-time rates.&nbsp;
+Below is an example that uses three GeForce 256 rendering passes to model
+ambient, diffuse, and specular lighting contributions based on per-pixel
+perturbed normals and a separate per-pixel surface decal texture.&nbsp;
+The cube map texture is used to normalize per-pixel the light vector and
+half-angle vectors that are computed per-vertex by GeForce's hardware Transform
+&amp; Lighting engine.&nbsp; The two images shown use different normal
+perturbation maps and differing light directions:
+<p><img SRC="torus_grain.jpg" height=350 width=350>&nbsp;&nbsp;<img SRC="torus_cell.jpg" height=350 width=350>
+<p>Comparing these two images to the first torus image in this tutorial
+shows the huge difference per-pixel lighting techniques can make in the
+appearance of computer-rendered objects.&nbsp; Also notice the specular
+highlights in both images.&nbsp; The wire frame image below shows the tessellation
+of the torus.&nbsp; Notice how the per-pixel detail far exceeds the tessellation
+of the base torus geometry.
+<center>
+<p><img SRC="torus_wireframe.jpg" height=310 width=288></center>
+
+<h1>
+The OpenGL <tt>EXT_texture_cube_map</tt> Extension</h1>
+If you already understand programming conventional 2D texture mapping using
+OpenGL, rendering with cube map textures is far easier than you probably
+think.
+<p>The OpenGL cube map extension is named <tt>EXT_texture_cube_map</tt>.&nbsp;
+The <tt>EXT</tt> prefix means that the extension is a multi-vendor extension.&nbsp;
+SGI and NVIDIA sponsored the texture cube map extension.
+<h2>
+New Cube Map Texture Targets</h2>
+In conventional OpenGL, there are two types of textures: 1D and 2D textures.&nbsp;
+OpenGL 1.2 introduced a new 3D texture type for volumetric texturing.&nbsp;
+The texture cube map extension adds a new cube map texture type.&nbsp;
+OpenGL calls these different texture types "texture targets".&nbsp; Including
+OpenGL 1.2 and the texture cube map extension, there are now four texture
+targets: 1D, 2D, 3D, and cube map.&nbsp; Each texture target has an associated
+enumerant that is passed to texture routines such as <tt>glBindTexture</tt>,
+<tt>glTexParameter</tt>,
+and <tt>glTexImage</tt>.&nbsp; For example, the texture target for 2D textures
+is <tt>GL_TEXTURE_2D</tt>.&nbsp; This enumerant is passed as the first
+parameter to <tt>glBindTexture</tt>, <tt>glTexParameter</tt>, and <tt>glTexImage</tt>
+and similar calls.&nbsp; <tt>glEnable</tt> and
+<tt>glDisable</tt> also
+use the 2D texture target enumerant to enable and disable 2D texturing.&nbsp;
+Similarly the texture target enumerant for 1D and 3D textures is <tt>GL_TEXTURE_1D</tt>
+and <tt>GL_TEXTURE_3D</tt>.
+<p>For cube map textures, there is a new texture target <tt>GL_TEXTURE_CUBE_MAP_EXT</tt>
+enumerant (the <tt>EXT</tt> suffix just indicates that the enumerant is
+for an <tt>EXT</tt> extension; all the new cube map enumerants have this
+suffix).&nbsp; This is the enumerant that you should pass to <tt>glBindTexture</tt>,
+<tt>glTexParameter</tt>,
+<tt>glEnable</tt>,
+and <tt>glDisable</tt> when using cube map textures.
+<p>But the <tt>GL_TEXTURE_CUBE_MAP_EXT</tt> enumerant is not used for <tt>glTexImage2D</tt>
+and related commands such as <tt>glCopySubTexImage2D</tt>.&nbsp; The texture
+cube map extension makes a distinction not necessary for the other texture
+targets.&nbsp; While 1D, 2D, and 3D textures have only a single set of
+image mipmap levels, every cube map texture has six distinct sets of image
+mipmap levels.&nbsp; Each texture target can be mipmapped so the complete
+image for 1D, 2D, and 3D textures is really a set of mipmap levels.&nbsp;
+For cube maps textures, each cube map face has its own set of mipmap levels.&nbsp;
+Because cube maps have six faces (the other texture types can be thought
+of as having only one face each), the texture cube map extension makes
+a distinction between the cube map "texture as a whole" target and the
+six "texture image" targets.&nbsp; The six cube map texture image targets
+are:
+<blockquote><tt>GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT</tt>
+<br><tt>GL_TEXTURE_CUBE_MAP_NEGATIVE_X_EXT</tt>
+<br><tt>GL_TEXTURE_CUBE_MAP_POSITIVE_Y_EXT</tt>
+<br><tt>GL_TEXTURE_CUBE_MAP_NEGATIVE_Y_EXT</tt>
+<br><tt>GL_TEXTURE_CUBE_MAP_POSITIVE_Z_EXT</tt>
+<br><tt>GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_EXT</tt></blockquote>
+These targets correspond to the six cube map faces.&nbsp; If you think
+of a cube map texture as centered at the origin of and aligned to an XYZ
+coordinate system, each face is named by the positive or negative X, Y,
+or Z axis that pierces its face.
+<p>One convenient thing about the cube map "texture image" targets is that
+the enumerants are laid out in sequential order so that
+<blockquote><tt>GL_TEXTURE_CUBE_MAP_POSITIVE_Y_EXT</tt> = <tt>GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT</tt>
++ 2,
+<br><tt>GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_EXT</tt> = <tt>GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT</tt>
++ 5, etc.</blockquote>
+These cube map "texture image" targets are the enumerants that should be
+used with <tt>glTexImage2D</tt>, <tt>glCopyTexImage2D</tt>, <tt>glTexSubImage2D</tt>,
+<tt>glCopySubTexImage2D</tt>,
+<tt>glGetTexImage</tt>, and <tt>glGetTexLevelParameter</tt> to update or
+query the specified image of the "texture image" target's respective cube
+map face.
+<p>Cube map images must always have square dimensions so the faces can
+form a cube.&nbsp; In addition to the other texture consistency rules specified
+by OpenGL, all the faces at a given level of a cube map must have the same
+dimensions and the width and height of each particular image in the cube
+map must be equal.
+<p>Like the other texture targets, cube map textures support a special
+"proxy" target used to query if a given texture target configuration is
+supported by the OpenGL implementation.&nbsp; The cube map texture proxy
+target is <tt>GL_PROXY_TEXTURE_CUBE_MAP_EXT</tt>.&nbsp; Because you never
+actually use the proxy target for texturing, instead you only query if
+it works or not, and because all the dimensions of all the faces for a
+given level of any cube map must have identical dimensions, there are not
+six proxy texture targets for each cube map face.&nbsp; A single cube map
+proxy target suffices.
+<p>For consistency with how the 3D texture target was added, there is also
+a new implementation defined constant <tt>GL_MAX_CUBE_MAP_TEXTURE_SIZE_EXT</tt>
+that indicates the maximum cube map texture size supported by the OpenGL
+implementation.&nbsp; In practice, the proxy mechanism is a preferable
+means to determine the implementation's specific limits.
+<h2>
+Setting the Images for a Cube Map Texture</h2>
+Here is how to load the six faces of a non-mipmapped cube map texture:
+<blockquote><tt>GLubyte face[6][64][64][3];</tt>
+<p><tt>for (i=0; i&lt;6; i++) {</tt>
+<br><tt>&nbsp; glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT + i,</tt>
+<br><tt>&nbsp;&nbsp;&nbsp; 0,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+//level</tt>
+<br><tt>&nbsp;&nbsp;&nbsp; GL_RGB8,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+//internal format</tt>
+<br><tt>&nbsp;&nbsp;&nbsp; 64,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+//width</tt>
+<br><tt>&nbsp;&nbsp;&nbsp; 64,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+//height</tt>
+<br><tt>&nbsp;&nbsp;&nbsp; 0,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+//border</tt>
+<br><tt>&nbsp;&nbsp;&nbsp; GL_RGB,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+//format</tt>
+<br><tt>&nbsp;&nbsp;&nbsp; GL_UNSIGNED_BYTE,&nbsp;&nbsp; //type</tt>
+<br><tt>&nbsp;&nbsp;&nbsp; &amp;face[i][0][0][0]); // pixel data</tt>
+<br><tt>}</tt></blockquote>
+Each face in the example above is a 64x64 RGB image.
+<p>Establishing mipmaps is not any more difficult.&nbsp; You can use the
+<tt>gluBuild2DMipmaps</tt>
+routine for establishing mipmap textures for cube map faces just like 2D
+textures.&nbsp; Instead of passing <tt>GL_TEXTURE_2D</tt> for the target
+parameter, pass in one of the "texture image" cube map targets.&nbsp; Example:
+<blockquote><tt>gluBuild2DMipmaps(GL_TEXTURE_CUBE_MAP_NEGATIVE_X_EXT,</tt>
+<br><tt>&nbsp; GL_RGB8, 64, 64, GL_RGB, GL_UNSIGNED_BYTE, &amp;face[1][0][0][0]);</tt></blockquote>
+
+<h2>
+Enabling and Disabling Cube Map Textures</h2>
+Enabling and disabling the cube map texture is done as follows:
+<blockquote><tt>glEnable(GL_TEXTURE_CUBE_MAP_EXT);</tt>
+<br><tt>glDisable(GL_TEXTURE_CUBE_MAP_EXT);</tt></blockquote>
+As stated earlier remember that for a cube map texture to be consistent,
+all the faces of all required levels must be square and have the same dimensions
+(in addition to the standard OpenGL texture consistency rules).&nbsp; If
+the texture is not consistent, OpenGL is required to act as if the inconsistent
+texture unit is disabled.
+<p>OpenGL has a priority scheme when multiple texture targets are enabled
+at the same time.&nbsp; Cube map texturing occurs when cube map texturing
+is enabled even if 3D, 2D, or 1D texturing is also enabled.&nbsp; The texturing
+enable priority is cube map, 3D, 2D, and finally 1D.
+<h2>
+Mapping Texture Coordinates to Cube Map Faces</h2>
+Because there are multiple faces, the mapping of texture coordinates to
+positions on cube map faces is more complicated than the other texturing
+targets.&nbsp; The <tt>EXT_texture_cube_map</tt> extension is purposefully
+designed to be consistent with DirectX 7's cube map arrangement.&nbsp;
+This is also consistent with the cube map arrangement in Pixar's RenderMan
+package.
+<p>For cube map texturing, the (<i>s,t,r</i>) texture coordinates are treated
+as a direction vector (<i>rx,ry,rz</i>) emanating from the center of a
+cube.&nbsp; (The <i>q</i> coordinate can be ignored since it merely scales
+the vector without affecting the direction.) At texture application time,
+the interpolated per-fragment (<i>s,t,r</i>) selects one of the cube map
+face's 2D mipmap sets based on the largest magnitude coordinate direction
+(the major axis direction). The target column in the table below explains
+how the major axis direction maps to the 2D image of a particular cube
+map target.
+<blockquote><tt>major axis</tt>
+<br><tt>direction&nbsp;&nbsp;&nbsp;&nbsp; target&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+sc&nbsp;&nbsp;&nbsp;&nbsp; tc&nbsp;&nbsp;&nbsp; ma</tt>
+<br><tt>----------&nbsp;&nbsp;&nbsp; ---------------------------------&nbsp;&nbsp;
+---&nbsp;&nbsp;&nbsp; ---&nbsp;&nbsp; ---</tt>
+<br><tt>&nbsp;+rx&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT&nbsp;&nbsp; -rz&nbsp;&nbsp;&nbsp; -ry&nbsp;&nbsp;
+rx</tt>
+<br><tt>&nbsp;-rx&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+GL_TEXTURE_CUBE_MAP_NEGATIVE_X_EXT&nbsp;&nbsp; +rz&nbsp;&nbsp;&nbsp; -ry&nbsp;&nbsp;
+rx</tt>
+<br><tt>&nbsp;+ry&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+GL_TEXTURE_CUBE_MAP_POSITIVE_Y_EXT&nbsp;&nbsp; +rx&nbsp;&nbsp;&nbsp; +rz&nbsp;&nbsp;
+ry</tt>
+<br><tt>&nbsp;-ry&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+GL_TEXTURE_CUBE_MAP_NEGATIVE_Y_EXT&nbsp;&nbsp; +rx&nbsp;&nbsp;&nbsp; -rz&nbsp;&nbsp;
+ry</tt>
+<br><tt>&nbsp;+rz&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+GL_TEXTURE_CUBE_MAP_POSITIVE_Z_EXT&nbsp;&nbsp; +rx&nbsp;&nbsp;&nbsp; -ry&nbsp;&nbsp;
+rz</tt>
+<br><tt>&nbsp;-rz&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_EXT&nbsp;&nbsp; -rx&nbsp;&nbsp;&nbsp; -ry&nbsp;&nbsp;
+rz</tt></blockquote>
+Using the <i>sc</i>, <i>tc</i>, and <i>ma</i> determined by the major axis
+direction as specified in the table above, an updated (s,t) is calculated
+as follows
+<blockquote><tt>s&nbsp;&nbsp; =&nbsp;&nbsp; ( sc/|ma| + 1 ) / 2</tt>
+<br><tt>t&nbsp;&nbsp; =&nbsp;&nbsp; ( tc/|ma| + 1 ) / 2</tt></blockquote>
+If |<i>ma</i>| is zero or very nearly zero, the results of the above two
+equations need not be defined (though the result may not lead to GL interruption
+or termination).&nbsp; Once the cube map face's 2D mipmap set and (s,t)
+is determined, texture fetching and filtering proceeds like standard OpenGL
+2D texturing.
+<h2>
+Texture Coordinate Generation Modes for Cube Map Textures</h2>
+You are free to pass per-vertex (<i>s,t,r</i>) texture coordinates for
+use with cube map texturing.&nbsp; For example:
+<blockquote><tt>glTexCoord3f(s,t,r);&nbsp; // user-supplied direction vector
+for cube map texturing</tt>
+<br><tt>glVertex3f(x,y,z);</tt></blockquote>
+In practice however, it usually makes more sense to use one of OpenGL's
+texture coordinate generation modes.&nbsp; Two new texgen modes are added
+that generate the eye-space reflection vector or normal vector in the (<i>s,t,r</i>)
+texture coordinates.&nbsp; Reflection map example:
+<blockquote><tt>glTexGenfv(GL_S, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP_EXT);</tt>
+<br><tt>glTexGenfv(GL_T, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP_EXT);</tt>
+<br><tt>glTexGenfv(GL_R, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP_EXT);</tt>
+<br><tt>glEnable(GL_TEXTURE_GEN_S);</tt>
+<br><tt>glEnable(GL_TEXTURE_GEN_T);</tt>
+<br><tt>glEnable(GL_TEXTURE_GEN_R);</tt></blockquote>
+Normal map example:
+<blockquote><tt>glTexGenfv(GL_S, GL_TEXTURE_GEN_MODE, GL_NORMAL_MAP_EXT);</tt>
+<br><tt>glTexGenfv(GL_T, GL_TEXTURE_GEN_MODE, GL_NORMAL_MAP_EXT);</tt>
+<br><tt>glTexGenfv(GL_R, GL_TEXTURE_GEN_MODE, GL_NORMAL_MAP_EXT);</tt>
+<br><tt>glEnable(GL_TEXTURE_GEN_S);</tt>
+<br><tt>glEnable(GL_TEXTURE_GEN_T);</tt>
+<br><tt>glEnable(GL_TEXTURE_GEN_R);</tt></blockquote>
+For these two modes to operate correctly, correct per-vertex normals must
+be supplied.
+<p>These new <tt>GL_REFLECTION_MAP_EXT</tt> and <tt>GL_NORMAL_MAP_EXT</tt>
+enumerants share the same respective values and functionality as the <tt>GL_REFLECTION_MAP_NV</tt>
+and <tt>GL_NORMAL_MAP_NV</tt> enumerants provided by the <tt>NV_texgen_reflection</tt>
+extension (this is extension is typically used in the absence of cube maps
+to implement a dual paraboloid map scheme).
+<p>The <tt>GL_EYE_LINEAR</tt> texgen mode is also useful with cube maps
+as a way of generating the unnormalized view vector.
+<p>OpenGL's texture matrix is also very useful for manipulating cube map
+texture coordinates.&nbsp; The texture matrix can be used to rotate an
+(<i>s,t,r</i>) vector from one space to another.&nbsp; For example, if
+your cube map texture is oriented in world coordinate space, and <i>M</i>
+is the matrix transform that moves from world coordinates to eye coordinates,
+you can load the inverse of the affine portion of <i>M</i> into the texture
+matrix to rotate the eye-space reflection or normal vectors generated by
+<tt>GL_REFLECTION_MAP_EXT</tt>
+or <tt>GL_NORMAL_MAP_EXT</tt> back into world space.
+<h2>
+Cube Maps and Multitexture</h2>
+Cube map texturing is orthogonal to multitexture.&nbsp; If the <tt>ARB_multitexture</tt>
+extension is supported along with the <tt>EXT_texture_cube_map</tt> extension,
+all the texture units must support cube map texturing.&nbsp; This means
+you can mix 2D texturing and cube map texturing in a single pass if you
+have two texture units.&nbsp; The per-pixel lighting examples shown above
+do exactly that.
+<h2>
+Before You Use the Extension</h2>
+Before you try to use the texture cube map extension, be sure to query
+the OpenGL extensions string returned by <tt>glGetString(GL_EXTENSIONS)</tt>
+to make sure the <tt>GL_EXT_texture_cube_map</tt> string is listed.
+<p>If you do not find that the texture cube map extension is supported,
+it may be possible to use sphere mapping or dual paraboloid mapping as
+a substitute for cube map texturing
+<p>There are no new entry points for cube map texturing.&nbsp; Windows
+OpenGL programmers do not have to worry about using <tt>wglGetProcAddress</tt>
+to use the texture cube map extension.&nbsp; Instead, the existing 2D texture
+commands are used for cube maps too.&nbsp; The only addition to the OpenGL
+API required for the texture cube map extension is a new set of cube map
+enumerants.&nbsp; In case your version of OpenGL's <tt>&lt;GL/gl.h></tt>
+header file does not include the new enumerants for the <tt>EXT_texture_cube_map</tt>
+extension, consider placing the following in a header file of your own:
+<blockquote><tt>#include &lt;GL/gl.h></tt>
+<br><tt>#ifndef GL_EXT_texture_cube_map</tt>
+<br><tt>/* EXT_texture_cube_map */</tt>
+<br><tt>#define GL_EXT_texture_cube_map&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+1</tt>
+<br><tt>#define GL_NORMAL_MAP_EXT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+0x8511</tt>
+<br><tt>#define GL_REFLECTION_MAP_EXT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+0x8512</tt>
+<br><tt>#define GL_TEXTURE_CUBE_MAP_EXT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+0x8513</tt>
+<br><tt>#define GL_TEXTURE_BINDING_CUBE_MAP_EXT&nbsp;&nbsp;&nbsp;&nbsp;
+0x8514</tt>
+<br><tt>#define GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT&nbsp; 0x8515</tt>
+<br><tt>#define GL_TEXTURE_CUBE_MAP_NEGATIVE_X_EXT&nbsp; 0x8516</tt>
+<br><tt>#define GL_TEXTURE_CUBE_MAP_POSITIVE_Y_EXT&nbsp; 0x8517</tt>
+<br><tt>#define GL_TEXTURE_CUBE_MAP_NEGATIVE_Y_EXT&nbsp; 0x8518</tt>
+<br><tt>#define GL_TEXTURE_CUBE_MAP_POSITIVE_Z_EXT&nbsp; 0x8519</tt>
+<br><tt>#define GL_TEXTURE_CUBE_MAP_NEGATIVE_Z_EXT&nbsp; 0x851A</tt>
+<br><tt>#define GL_PROXY_TEXTURE_CUBE_MAP_EXT&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+0x851B</tt>
+<br><tt>#define GL_MAX_CUBE_MAP_TEXTURE_SIZE_EXT&nbsp;&nbsp;&nbsp; 0x851C</tt>
+<br><tt>#endif</tt></blockquote>
+
+<h2>
+The Extension Specification</h2>
+The definitive documentation for how the <tt>EXT_texture_cube_map</tt>
+OpenGL extension operates is the extension's <a href="http://www.berkelium.com/OpenGL/EXT/texture_cube_map.txt">specification</a>.
+<h1>
+Example Source Code</h1>
+As promised, source code for two sample programs that use the <tt>EXT_texture_cube_map</tt>
+extension can be found <a href="cubemap.zip">here</a>.
+<p>The <tt><a href="cubemap.c">cubemap.c</a></tt> example is a very basic
+program.&nbsp; It creates a cube map where every cube map face is a different
+solid color.&nbsp; Then the example draws a sphere with <tt>GL_REFLECTION_MAP_EXT</tt>
+texgen.&nbsp; The result should look like this:
+<center>
+<p><img SRC="cubemap.jpg" height=250 width=341></center>
+
+<p>The <tt><a href="cm_demo.c">cm_demo.c</a></tt> example is a bit more
+interesting.&nbsp; The outdoor patio environment is loaded into a cube
+map and use to environment map a teapot, torus, or sphere.&nbsp; You can
+spin the object and see how the reflection changes.&nbsp; You can also
+switch between reflection mapping or normal mapping.&nbsp; Additionally,
+if you OpenGL implementation also supports the <tt>EXT_texture_lod_bias</tt>
+extension, you can switch between a shiny or dull environment map.&nbsp;
+Here's a snapshot:
+<center>
+<p><img SRC="cm_teapot.jpg" height=373 width=397></center>
+
+<p><br>
+</body>
+</html>
