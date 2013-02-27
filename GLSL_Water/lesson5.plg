@@ -1,0 +1,37 @@
+<html>
+<body>
+<pre>
+<h1>Erstellungsprotokoll</h1>
+<h3>
+--------------------Konfiguration: lesson5 - Win32 Debug--------------------
+</h3>
+<h3>Befehlszeilen</h3>
+Erstellen der temporären Datei  "C:\DOKUME~1\MICHAE~1\LOKALE~1\Temp\RSP21.tmp" mit Inhalten
+[
+/nologo /MLd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /FR"Debug/" /Fp"Debug/lesson5.pch" /YX /Fo"Debug/" /Fd"Debug/" /FD /GZ /c 
+"C:\Dokumente und Einstellungen\Michael Horsch\Eigene Dateien\myproj\BS Support\waterGLSLUpdated\GLSL_Water\lesson5.cpp"
+]
+Creating command line "cl.exe @C:\DOKUME~1\MICHAE~1\LOKALE~1\Temp\RSP21.tmp" 
+Erstellen der temporären Datei  "C:\DOKUME~1\MICHAE~1\LOKALE~1\Temp\RSP22.tmp" mit Inhalten
+[
+glut32.lib glee.lib opengl32.lib glu32.lib glaux.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /incremental:yes /pdb:"Debug/lesson5.pdb" /debug /machine:I386 /out:"Debug/lesson5.exe" /pdbtype:sept 
+".\Debug\GLee.obj"
+".\Debug\lesson5.obj"
+".\Debug\TextureLoader.obj"
+]
+Erstellen der Befehlzeile "link.exe @C:\DOKUME~1\MICHAE~1\LOKALE~1\Temp\RSP22.tmp"
+<h3>Ausgabefenster</h3>
+Kompilierung läuft...
+lesson5.cpp
+Linker-Vorgang läuft...
+Erstellen der Befehlzeile "bscmake.exe /nologo /o"Debug/lesson5.bsc"  ".\Debug\GLee.sbr" ".\Debug\lesson5.sbr" ".\Debug\TextureLoader.sbr""
+Browse-Informationsdatei wird erstellt...
+<h3>Ausgabefenster</h3>
+
+
+
+<h3>Ergebnisse</h3>
+lesson5.exe - 0 Fehler, 0 Warnung(en)
+</pre>
+</body>
+</html>

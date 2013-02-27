@@ -1,0 +1,14 @@
+GL Intercept Log. Version : 0.5    Compile Date: Dec  3 2005    Run on: Thu Sep 28 18:09:36 2006
+
+===================================================
+ImageManager::Destructor - OpenGL id 1 is still active. (Image Memory leak?)
+ImageManager::Destructor - OpenGL id 2 is still active. (Image Memory leak?)
+ImageManager::Destructor - OpenGL id 3 is still active. (Image Memory leak?)
+ShaderGLSLManager::Destructor - OpenGL id 1 is still active. (ShaderGLSL Memory leak?)
+ShaderGLSLManager::Destructor - OpenGL id 2 is still active. (ShaderGLSL Memory leak?)
+ShaderGLSLManager::Destructor - OpenGL id 3 is still active. (ShaderGLSL Memory leak?)
+ShaderGLSLManager::Destructor - OpenGL id 2 is still active. (ShaderGLSL Memory leak?)
+ShaderGLSLManager::Destructor - OpenGL id 3 is still active. (ShaderGLSL Memory leak?)
+ShaderGLSLManager::Destructor - OpenGL id 1 is still active. (ShaderGLSL Memory leak?)
+===================================================
+Log End.

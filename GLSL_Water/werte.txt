@@ -1,0 +1,3 @@
+reflectionTexture 1
+refractionTexture 2
+depthTexture 3

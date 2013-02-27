@@ -1,0 +1,59 @@
+﻿生成启动时间为 2012-11-26 17:34:37。
+     1>项目“E:\advance opengl\Shadow Mapping Tutorial\Shadow Mapping.vcxproj”在节点 2 上(build 个目标)。
+     1>InitializeBuildStatus:
+         正在创建“.\Debug\Shadow Mapping.unsuccessfulbuild”，因为已指定“AlwaysCreate”。
+       ClCompile:
+         C:\Program Files\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /Ic:\glut /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _CRT_SECURE_NO_DEPRECATE /D _VC80_UPGRADE=0x0600 /D _MBCS /Gm /EHsc /RTC1 /MTd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo".\Debug/" /Fd".\Debug/vc100.pdb" /Gd /TP /analyze- /errorReport:prompt FPS_COUNTER.cpp main.cpp scene.cpp TIMER.cpp Maths\COLOR.cpp Maths\MATRIX4X4.cpp Maths\PLANE.cpp Maths\VECTOR2D.cpp Maths\VECTOR3D.cpp Maths\VECTOR4D.cpp
+         VECTOR4D.cpp
+         VECTOR3D.cpp
+         VECTOR2D.cpp
+         PLANE.cpp
+         MATRIX4X4.cpp
+         COLOR.cpp
+         TIMER.cpp
+         scene.cpp
+         main.cpp
+         FPS_COUNTER.cpp
+         正在生成代码...
+         C:\Program Files\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /Ic:\glut /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _CRT_SECURE_NO_DEPRECATE /D _VC80_UPGRADE=0x0600 /D _MBCS /Gm /EHsc /RTC1 /MTd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo".\Debug/" /Fd".\Debug/vc100.pdb" /Gd /TC /analyze- /errorReport:prompt GLee\GLee.c
+         GLee.c
+       ManifestResourceCompile:
+         C:\Program Files\Microsoft SDKs\Windows\v7.0A\bin\rc.exe /nologo /fo".\Debug\Shadow Mapping.exe.embed.manifest.res" ".\Debug\Shadow Mapping_manifest.rc" 
+       Link:
+         C:\Program Files\Microsoft Visual Studio 10.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:".\Debug/Shadow Mapping.exe" /INCREMENTAL /NOLOGO /LIBPATH:c:\glut kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /ManifestFile:".\Debug\Shadow Mapping.exe.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /DEBUG /PDB:".\Debug/Shadow Mapping.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\Debug\Shadow Mapping.lib" /MACHINE:X86 ".\Debug\Shadow Mapping.exe.embed.manifest.res"
+         .\Debug/FPS_COUNTER.obj
+         .\Debug/main.obj
+         .\Debug/scene.obj
+         .\Debug/TIMER.obj
+         .\Debug/COLOR.obj
+         .\Debug/MATRIX4X4.obj
+         .\Debug/PLANE.obj
+         .\Debug/VECTOR2D.obj
+         .\Debug/VECTOR3D.obj
+         .\Debug/VECTOR4D.obj
+         .\Debug/GLee.obj
+       Manifest:
+         C:\Program Files\Microsoft SDKs\Windows\v7.0A\bin\mt.exe /nologo /verbose /out:".\Debug\Shadow Mapping.exe.embed.manifest" /manifest ".\Debug\Shadow Mapping.exe.intermediate.manifest"
+         C:\Program Files\Microsoft SDKs\Windows\v7.0A\bin\rc.exe /nologo /fo".\Debug\Shadow Mapping.exe.embed.manifest.res" ".\Debug\Shadow Mapping_manifest.rc" 
+       LinkEmbedManifest:
+         C:\Program Files\Microsoft Visual Studio 10.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:".\Debug/Shadow Mapping.exe" /INCREMENTAL /NOLOGO /LIBPATH:c:\glut kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /ManifestFile:".\Debug\Shadow Mapping.exe.intermediate.manifest" /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /DEBUG /PDB:".\Debug/Shadow Mapping.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\Debug\Shadow Mapping.lib" /MACHINE:X86 ".\Debug\Shadow Mapping.exe.embed.manifest.res"
+         .\Debug/FPS_COUNTER.obj
+         .\Debug/main.obj
+         .\Debug/scene.obj
+         .\Debug/TIMER.obj
+         .\Debug/COLOR.obj
+         .\Debug/MATRIX4X4.obj
+         .\Debug/PLANE.obj
+         .\Debug/VECTOR2D.obj
+         .\Debug/VECTOR3D.obj
+         .\Debug/VECTOR4D.obj
+         .\Debug/GLee.obj
+         Shadow Mapping.vcxproj -> E:\advance opengl\Shadow Mapping Tutorial\.\Debug\Shadow Mapping.exe
+       FinalizeBuildStatus:
+         正在删除文件“.\Debug\Shadow Mapping.unsuccessfulbuild”。
+         正在对“.\Debug\Shadow Mapping.lastbuildstate”执行 Touch 任务。
+     1>已完成生成项目“E:\advance opengl\Shadow Mapping Tutorial\Shadow Mapping.vcxproj”(build 个目标)的操作。
+
+生成成功。
+
+已用时间 00:00:06.07
